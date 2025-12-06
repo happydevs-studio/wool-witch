@@ -3,9 +3,10 @@ import { Header } from './components/Header';
 import { Shop } from './pages/Shop';
 import { Cart } from './pages/Cart';
 import { Checkout } from './pages/Checkout';
+import { Admin } from './pages/Admin';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout'>('shop');
+  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin'>('shop');
 
   const renderPage = () => {
     switch (currentPage) {
@@ -15,6 +16,8 @@ function App() {
         return <Cart onNavigate={setCurrentPage} />;
       case 'checkout':
         return <Checkout onNavigate={setCurrentPage} />;
+      case 'admin':
+        return <Admin />;
       default:
         return <Shop />;
     }
