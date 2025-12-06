@@ -1,5 +1,6 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "wool-witch",
+  "description": "A modern e-commerce web application for handmade crochet and craft goods",
   "private": true,
   "version": "0.0.0",
   "type": "module",
