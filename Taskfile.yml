@@ -15,6 +15,7 @@ tasks:
     desc: Complete first-time project setup
     cmds:
       - task: check-deps
+      - task: install-supabase
       - task: install
       - task: setup-env
       - echo ""
@@ -107,6 +108,21 @@ tasks:
       - package-lock.json
     generates:
       - node_modules/**/*
+
+  install-supabase:
+    desc: Install Supabase CLI
+    cmds:
+      - |
+        if ! command -v supabase &> /dev/null; then
+          echo "Installing Supabase CLI..."
+          cd /tmp
+          wget -qO- https://github.com/supabase/cli/releases/download/v2.65.5/supabase_linux_amd64.tar.gz | tar -xz
+          sudo mv supabase /usr/local/bin/supabase
+          cd -
+          echo "Supabase CLI installed successfully!"
+        else
+          echo "Supabase CLI already installed: $(supabase --version)"
+        fi
 
   clean:
     desc: Clean build artifacts
