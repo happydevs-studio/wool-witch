@@ -2,9 +2,9 @@
   # Woolwitch E-commerce Platform - Initial Setup
   
   ## Overview
-  Complete initial setup for the Woolwitch handmade crochet goods e-commerce platform.
-  This migration creates all necessary database objects in the correct schema from the start,
-  eliminating the need for later schema movements and policy recreations.
+  Complete optimized initial setup for the Woolwitch handmade crochet goods e-commerce platform.
+  This migration creates all necessary database objects with proper security settings and performance
+  optimizations from the start.
 
   ## What This Migration Creates
   
@@ -13,19 +13,20 @@
   - Proper permissions for authenticated, anonymous, and service roles
   
   ### Core Tables
-  - `woolwitch.products` - Product catalog with full RLS policies
+  - `woolwitch.products` - Product catalog with optimized RLS policies
   - `woolwitch.user_roles` - User role management (admin/user)
   
   ### Storage
   - `product-images` storage bucket with admin-aware policies
   
   ### Functions & Triggers
-  - `woolwitch.is_admin()` - Check if current user is admin
-  - `woolwitch.handle_new_user()` - Auto-assign user role on signup
+  - `woolwitch.is_admin()` - Check if current user is admin (with search_path)
+  - `woolwitch.handle_new_user()` - Auto-assign user role on signup (with search_path)
   - Trigger to execute handle_new_user on auth.users insert
   
   ### Security Features
   - Row Level Security (RLS) enabled on all tables
+  - Optimized policies to prevent performance issues
   - Public read access to available products
   - Admin-only write access to products and storage
   - Schema-level access control
@@ -58,17 +59,17 @@ CREATE TABLE woolwitch.user_roles (
 -- Enable RLS
 ALTER TABLE woolwitch.user_roles ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can view their own role
+-- Optimized policy: Users can view their own role (with subquery for performance)
 CREATE POLICY "Users can view their own role"
   ON woolwitch.user_roles
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING ((SELECT auth.uid()) = user_id);
 
 -- ========================================
 -- ADMIN HELPER FUNCTION
 -- ========================================
 
--- Function to check if current user is admin
+-- Function to check if current user is admin (with search_path for security)
 -- Used by RLS policies throughout the application
 CREATE OR REPLACE FUNCTION woolwitch.is_admin()
 RETURNS boolean AS $$
@@ -79,7 +80,9 @@ BEGIN
     AND role = 'admin'
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql 
+   SECURITY DEFINER
+   SET search_path = 'woolwitch, auth';
 
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION woolwitch.is_admin() TO authenticated;
@@ -105,16 +108,16 @@ CREATE TABLE woolwitch.products (
 -- Enable RLS
 ALTER TABLE woolwitch.products ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for products table
-CREATE POLICY "Anyone can view available products"
+-- Optimized single policy for product visibility (combines public + admin access)
+-- This policy allows:
+-- 1. Anyone to view available products (is_available = true)
+-- 2. Admins to view all products (regardless of availability)
+CREATE POLICY "Product visibility policy"
   ON woolwitch.products
   FOR SELECT
-  USING (is_available = true);
-
-CREATE POLICY "Admins can view all products"
-  ON woolwitch.products
-  FOR SELECT
-  USING (woolwitch.is_admin());
+  USING (
+    is_available = true OR woolwitch.is_admin()
+  );
 
 CREATE POLICY "Admins can insert products"
   ON woolwitch.products
@@ -135,7 +138,7 @@ CREATE POLICY "Admins can delete products"
 -- USER MANAGEMENT AUTOMATION
 -- ========================================
 
--- Function to automatically assign user role when user signs up
+-- Function to automatically assign user role when user signs up (with search_path)
 CREATE OR REPLACE FUNCTION woolwitch.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -143,7 +146,9 @@ BEGIN
   VALUES (NEW.id, 'user');
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql 
+   SECURITY DEFINER
+   SET search_path = 'woolwitch, auth';
 
 -- Grant execute permission to service_role for trigger execution
 GRANT EXECUTE ON FUNCTION woolwitch.handle_new_user() TO service_role;
@@ -168,7 +173,7 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies with admin awareness from the start
+-- Storage policies with admin awareness
 CREATE POLICY "Public Access for Product Images"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'product-images');
