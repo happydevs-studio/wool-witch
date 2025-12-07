@@ -2,11 +2,64 @@
 
 Thank you for your interest in contributing to Wool Witch! This guide will help you get started with development and contribution.
 
-## 🌟 Code of Conduct
+## 🚀 5-Minute Start (No Tools Required)
 
-By participating in this project, you agree to maintain a respectful and inclusive environment for all contributors.
+**Just want to try it quickly?**
 
-## 🚀 Quick Start for Contributors
+```bash
+git clone https://github.com/dataGriff/wool-witch.git
+cd wool-witch
+npm install && npm run start
+```
+
+Visit <http://localhost:5173> - you're running Wool Witch!
+
+## 🛠️ Full Development Setup
+
+**Ready to contribute seriously?**
+
+1. **Install Task runner** (optional but recommended):
+
+   ```bash
+   # macOS
+   brew install go-task
+   
+   # Ubuntu/Debian  
+   sudo snap install task --classic
+   
+   # Or use official script
+   curl -sL https://taskfile.dev/install.sh | sh
+   ```
+
+2. **Run full setup:**
+
+   ```bash
+   task setup && task dev
+   ```
+
+3. **Start coding!** You'll have:
+   - 🌐 **Web App**: <http://localhost:5173>
+   - 📊 **Database Admin**: <http://localhost:54323>
+   - 🔌 **API**: <http://localhost:54321>
+
+[Full development guide ↓](#full-development-environment)
+
+## 📋 Quick Contribution Checklist
+
+Before submitting:
+
+- [ ] `npm run test` passes (or `task test`)
+- [ ] Code follows style guide  
+- [ ] Added tests if needed
+- [ ] Updated docs if needed
+- [ ] Clear commit messages
+- [ ] PR description explains changes
+
+[Detailed guidelines ↓](#detailed-contribution-process)
+
+---
+
+## Full Development Environment
 
 ### Prerequisites
 
@@ -16,33 +69,6 @@ Before you begin, ensure you have:
 - npm
 - [Docker Desktop](https://docs.docker.com/get-docker/) (for local database)
 - Git
-
-**Optional but recommended:**
-
-- [Task](https://taskfile.dev/) (task runner)
-
-#### Installing Task
-
-If you don't have Task installed, you can install it using the official installation script:
-
-```bash
-# Install Task using the official script
-curl -sL https://taskfile.dev/install.sh | sh
-
-# Move to system PATH (may require sudo)
-sudo mv ./bin/task /usr/local/bin/task
-
-# Verify installation
-task --version
-```
-
-Alternative installation methods:
-
-- **macOS**: `brew install go-task`
-- **Ubuntu/Debian**: `sudo snap install task --classic`
-- **Other platforms**: See [Task installation guide](https://taskfile.dev/installation/)
-
-Without Task, you can use npm scripts instead (see package.json for available scripts).
 
 ### Setting Up Your Development Environment
 
@@ -61,7 +87,7 @@ Without Task, you can use npm scripts instead (see package.json for available sc
    git remote add upstream https://github.com/dataGriff/wool-witch.git
    ```
 
-4. **One-command setup:**
+4. **Complete setup:**
 
    ```bash
    task setup
@@ -105,7 +131,7 @@ The app includes authentication with role-based access:
 
 See [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md) for detailed authentication testing.
 
-## 🔄 Development Process
+## Detailed Contribution Process
 
 ### Creating a New Feature
 
@@ -120,6 +146,7 @@ See [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md) for detailed au
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation updates
+- `refactor/` - Code refactoring
 - `refactor/` - Code refactoring
 
 ### Code Quality

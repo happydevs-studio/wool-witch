@@ -6,8 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:quick": "npm run setup:env && npm run dev",
+    "start": "npm run dev:quick",
+    "setup:env": "node -e \"const fs = require('fs'); if (!fs.existsSync('.env.local')) { fs.writeFileSync('.env.local', 'VITE_SUPABASE_URL=http://localhost:54321\\nVITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0\\nSUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'); console.log('Created .env.local with local Supabase config'); } else { console.log('.env.local already exists'); }\"",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "npm run lint && npm run typecheck",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "upload-products": "node bin/upload-products.mjs",

@@ -1,47 +1,58 @@
 # Wool Witch 🧶
 
-A modern e-commerce web application for handmade crochet and craft goods, built with React, TypeScript, and Supabase.
+*Handmade crochet goods crafted with love*
 
-## ✨ Features
+Browse our collection of unique, handcrafted crochet items perfect for gifts or treating yourself.
 
-- 🛍️ **Product Catalog** - Browse beautiful handmade crochet items
-- 🛒 **Shopping Cart** - Add items and manage your cart
-- 💳 **Secure Checkout** - Safe payment processing
-- 👤 **User Accounts** - Sign up and manage your profile
-- 🔐 **Admin Dashboard** - Product management for store owners
-- 📱 **Mobile Friendly** - Works perfectly on all devices
-- ⚡ **Fast & Reliable** - Built with modern technology
+## 🛍️ Start Shopping
 
-## 🚀 Quick Start
+**Live Store**: [shop.woolwitch.com](https://shop.woolwitch.com) _(Coming Soon)_
+**Try Demo**: Run locally in 2 minutes ↓
 
-### For Users
-
-Visit the live application: [Wool Witch Shop](https://your-domain.com) _(Coming Soon)_
-
-### For Contributors
-
-Want to contribute? Get up and running in minutes:
+### Quick Demo Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/dataGriff/wool-witch.git
-cd wool-witch
-
-# One-command setup
-task setup
-
-# Start developing
-task dev
+npx degit dataGriff/wool-witch wool-witch
+cd wool-witch && npm install && npm run start
 ```
 
-That's it! The app runs at <http://localhost:5173> with a full local database.
+Visit <http://localhost:5173> - you're browsing Wool Witch!
 
-**What you get:**
+## ✨ What You'll Find
 
-- Local Supabase database in Docker
-- Hot-reload development server
-- Database admin interface
-- No cloud setup required
+- 🧶 **Handmade Crochet Items** - Unique pieces crafted with care
+- 🎁 **Perfect Gifts** - Special items for your loved ones
+- 🛒 **Easy Shopping** - Simple cart and secure checkout
+- 📱 **Mobile Friendly** - Shop from any device
+- 💝 **Made to Order** - Custom pieces available
+
+## 🏪 Product Highlights
+
+- **Cozy Blankets** - Soft, warm throws for any season
+- **Stylish Accessories** - Scarves, hats, and bags
+- **Home Decor** - Beautiful accents for your space
+- **Baby Items** - Gentle, safe pieces for little ones
+- **Custom Orders** - Bring your vision to life
+
+---
+
+## 👨‍💻 For Developers
+
+Want to contribute to Wool Witch? We'd love your help!
+
+### Quick Start (2 minutes)
+
+```bash
+git clone https://github.com/dataGriff/wool-witch.git
+cd wool-witch && npm run start
+```
+
+### Full Development Setup
+
+```bash
+# Install Task runner (recommended)
+task setup && task dev
+```
 
 👉 **See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete developer guide**
 
@@ -58,8 +69,8 @@ That's it! The app runs at <http://localhost:5173> with a full local database.
 
 ### User Guides
 
-- **Shopping Guide** - How to browse and purchase items _(Coming Soon)_
-- **Account Management** - Managing your profile and orders _(Coming Soon)_
+- **Shopping Guide** - How to browse and purchase items *Coming Soon*
+- **Account Management** - Managing your profile and orders *Coming Soon*
 
 ### Developer Guides
 
@@ -67,7 +78,7 @@ That's it! The app runs at <http://localhost:5173> with a full local database.
 - **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Testing auth features
 - **[Product Image Management](docs/PRODUCT_IMAGE_MANAGEMENT.md)** - Managing product images and Supabase storage
 - **[Database Schema](docs/)** - Database structure and migrations
-- **Deployment Guide** - Production deployment _(Coming Soon)_
+- **Deployment Guide** - Production deployment *Coming Soon*
 
 ## 🤝 Contributing
 
@@ -76,11 +87,10 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 **Quick start for contributors:**
 
 1. Fork the repository
-2. Run `task setup` for one-command setup
-3. Run `task dev` to start developing
-4. Make your changes
-5. Run `task test` to ensure quality
-6. Submit a pull request
+2. Run `npm run start` for instant setup
+3. Make your changes
+4. Run `npm run test` to ensure quality
+5. Submit a pull request
 
 **👉 Read the [Contributing Guide](CONTRIBUTING.md) for detailed instructions**
 

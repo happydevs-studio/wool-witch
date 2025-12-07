@@ -10,14 +10,21 @@ tasks:
     cmds:
       - task --list
 
-  # Essential Development Tasks
-  dev-only:
-    desc: Start dev server only (assumes database is running)
+  # === QUICK START (no external deps) ===
+  quick-start:
+    desc: Instant setup without external dependencies
     deps: [install]
     cmds:
-      - echo "Starting dev server..."
-      - npm run dev
+      - task: setup-env
+      - echo "Quick setup complete!"
+      - echo "Run 'npm run start' to begin developing"
 
+  start:
+    desc: Alias for npm run start (quick development)
+    cmds:
+      - npm run start
+
+  # === DEVELOPMENT (full setup) ===
   setup:
     desc: Complete first-time project setup (dependencies + env + database)
     cmds:
@@ -29,10 +36,18 @@ tasks:
       - echo ""
       - echo "Next steps:"
       - echo "  • task dev                (start development)"
+      - echo "  • npm run start           (quick start without database)"
       - echo "  • task setup-products     (demo product upload)"
       - echo ""
       - echo "See CONTRIBUTING.md for development guide"
       - echo ""
+
+  setup:minimal:
+    desc: Minimal setup for quick testing (no external tools)
+    deps: [install]
+    cmds:
+      - task: setup-env
+      - echo "Minimal setup complete! Run 'npm run start' to begin"
 
   dev:
     desc: Start development environment (database + dev server)
@@ -47,21 +62,16 @@ tasks:
       - task: upload-products-if-needed
       - npm run dev
 
-  test:
-    desc: Run all quality checks (lint + typecheck)
+  dev-only:
+    desc: Start dev server only (assumes database is running)
     deps: [install]
     cmds:
-      - task: lint
-      - task: typecheck
-      - echo "All checks passed!"
+      - echo "Starting dev server..."
+      - npm run dev
 
-  build:
-    desc: Build for production
-    deps: [install]
-    cmds:
-      - npm run build
+  # === DATABASE ===
 
-  # Database Management
+  # === DATABASE ===
   install-supabase:
     desc: Install Supabase CLI if not present
     cmds:
@@ -130,13 +140,57 @@ tasks:
       - supabase status
 
   db:migrate:
-    desc: Apply pending database migrations
+    desc: Apply pending database migrations (local development)
     deps: [install-supabase]
     cmds:
-      - echo "Applying database migrations..."
-      - supabase db push
+      - echo "For local development, migrations are applied automatically when starting the database."
+      - echo "If you need to manually apply migrations, try:"
+      - echo "  1. task db:reset  (full reset with migrations)"
+      - echo "  2. task db:stop && task db:start  (restart to apply new migrations)"
+      - supabase status
 
-  # Product Management
+  db:migration:new:
+    desc: Create a new database migration
+    deps: [install-supabase]
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          echo "Usage: task db:migration:new -- migration_name"
+          echo "Example: task db:migration:new -- add_user_preferences"
+          exit 1
+        fi
+        supabase migration new "{{.CLI_ARGS}}"
+
+  # === UTILITIES ===
+  test:
+    desc: Run all quality checks (lint + typecheck)
+    deps: [install]
+    cmds:
+      - task: lint
+      - task: typecheck
+      - echo "All checks passed!"
+
+  build:
+    desc: Build for production
+    deps: [install]
+    cmds:
+      - npm run build
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf dist || true
+      - rm -rf node_modules || true
+      - rm -rf .vite || true
+      - echo "Cleaned"
+
+  preview:
+    desc: Preview production build
+    deps: [build]
+    cmds:
+      - npm run preview
+
+  # === PRODUCT MANAGEMENT ===
   upload-products:
     desc: Upload product images to Supabase and sync database
     deps: [install]
@@ -186,20 +240,6 @@ tasks:
       - package-lock.json
     generates:
       - node_modules/**/*
-
-  clean:
-    desc: Clean build artifacts
-    cmds:
-      - rm -rf dist || true
-      - rm -rf node_modules || true
-      - rm -rf .vite || true
-      - echo "Cleaned"
-
-  preview:
-    desc: Preview production build
-    deps: [build]
-    cmds:
-      - npm run preview
 
   # Internal Tasks
   check-deps:
