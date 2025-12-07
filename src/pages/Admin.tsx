@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +20,9 @@ export function Admin() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -63,11 +66,15 @@ export function Admin() {
       stock_quantity: product.stock_quantity.toString(),
       is_available: product.is_available,
     });
+    setImagePreview(product.image_url);
+    setSelectedImage(null);
   };
 
   const handleCancel = () => {
     setEditingId(null);
     setIsAdding(false);
+    setSelectedImage(null);
+    setImagePreview('');
     setFormData({
       name: '',
       description: '',
@@ -77,6 +84,67 @@ export function Admin() {
       stock_quantity: '0',
       is_available: true,
     });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image. Please try again.');
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -94,8 +162,20 @@ export function Admin() {
         alert('Product description is required');
         return;
       }
-      if (!formData.image_url.trim()) {
-        alert('Product image URL is required');
+
+      // Handle image upload
+      let imageUrl = formData.image_url;
+      if (selectedImage) {
+        const uploadedUrl = await uploadImage(selectedImage);
+        if (!uploadedUrl) {
+          return; // Upload failed, error already shown
+        }
+        imageUrl = uploadedUrl;
+      }
+
+      // Validate that we have an image
+      if (!imageUrl.trim()) {
+        alert('Product image is required');
         return;
       }
 
@@ -115,7 +195,7 @@ export function Admin() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: price,
-        image_url: formData.image_url.trim(),
+        image_url: imageUrl.trim(),
         category: formData.category.trim(),
         stock_quantity: stockQuantity,
         is_available: formData.is_available,
@@ -239,13 +319,32 @@ export function Admin() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-rose-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <Upload className="w-5 h-5 mr-2 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        {selectedImage ? selectedImage.name : 'Click to upload image (JPEG, PNG, WebP, or GIF, max 5MB)'}
+                      </span>
+                    </label>
+                  </div>
+                  {imagePreview && (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full max-w-xs h-48 object-cover rounded-lg border border-gray-300"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="flex items-center space-x-2">
@@ -262,17 +361,19 @@ export function Admin() {
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={handleCancel}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={uploading}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-5 h-5" />
                 <span>Cancel</span>
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
+                disabled={uploading}
+                className="flex items-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-5 h-5" />
-                <span>Save</span>
+                <span>{uploading ? 'Uploading...' : 'Save'}</span>
               </button>
             </div>
           </div>
