@@ -35,11 +35,8 @@ jobs:
       
     - name: Create environment file
       run: |
-        echo "VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}" > .env.production
+        echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" > .env.production
         echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env.production
-        echo "Debug - URL length: ${#VITE_SUPABASE_URL}"
-        echo "Debug - KEY length: ${#VITE_SUPABASE_ANON_KEY}"
-        cat .env.production
         
     - name: Build application
       run: npm run build
