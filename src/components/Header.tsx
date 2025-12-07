@@ -165,12 +165,20 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             )}
             <a
               href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+              }}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
             >
               About
             </a>
             <a
               href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+              }}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
             >
               Contact
