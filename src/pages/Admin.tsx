@@ -90,7 +90,7 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!validTypes.includes(file.type)) {
         alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
         return;
@@ -117,9 +117,9 @@ export function Admin() {
     try {
       setUploading(true);
       
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      // Generate unique filename with extension validation
+      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = fileName;
 
       // Upload to Supabase Storage
