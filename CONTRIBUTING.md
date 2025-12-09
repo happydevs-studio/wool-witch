@@ -29,6 +29,10 @@ Visit <http://localhost:5173> - you're running Wool Witch!
    
    # Or use official script
    curl -sL https://taskfile.dev/install.sh | sh
+
+   mkdir -p ~/.local/bin && sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+   export PATH="$HOME/.local/bin:$PATH" && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
    ```
 
 2. **Run full setup:**
