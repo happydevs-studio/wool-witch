@@ -2,23 +2,35 @@
 
 Thank you for your interest in contributing to Wool Witch! This guide will help you get started with development and contribution.
 
-## 🚀 5-Minute Start (No Tools Required)
+## 🚀 Demo Setup (1 Minute)
 
-**Just want to try it quickly?**
+**Just want to see the app running?**
 
 ```bash
 git clone https://github.com/dataGriff/wool-witch.git
 cd wool-witch
-npm install && npm run start
+npm install && npm start
 ```
 
-Visit <http://localhost:5173> - you're running Wool Witch!
+✨ Visit <http://localhost:5173> - you're running Wool Witch!
 
-## 🛠️ Full Development Setup
+*This gives you the frontend only with sample data - perfect for UI/design work.*
 
-**Ready to contribute seriously?**
+## 🛠️ Full Development Setup (5 Minutes)
 
-1. **Install Task runner** (optional but recommended):
+**Ready to contribute with full database and backend access?**
+
+### Prerequisites
+
+Before starting, ensure you have:
+
+- **Node.js** (>= 18.0.0)
+- **Docker Desktop** (running)
+- **Git**
+
+### Setup Steps
+
+1. **Install Task runner** (recommended for best experience):
 
    ```bash
    # macOS
@@ -27,24 +39,40 @@ Visit <http://localhost:5173> - you're running Wool Witch!
    # Ubuntu/Debian  
    sudo snap install task --classic
    
-   # Or use official script
-   curl -sL https://taskfile.dev/install.sh | sh
-
-   mkdir -p ~/.local/bin && sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-   export PATH="$HOME/.local/bin:$PATH" && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-
+   # Universal (any OS)
+   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+   export PATH="$HOME/.local/bin:$PATH"
    ```
 
-2. **Run full setup:**
+2. **Run complete setup:**
 
    ```bash
    task setup && task dev
    ```
 
-3. **Start coding!** You'll have:
+3. **Start developing!** You now have:
    - 🌐 **Web App**: <http://localhost:5173>
    - 📊 **Database Admin**: <http://localhost:54323>
    - 🔌 **API**: <http://localhost:54321>
+   - 📧 **Email Testing**: <http://localhost:54324>
+
+**First run downloads Docker images (~2-5 minutes). Subsequent runs take ~30 seconds.**
+
+### Alternative: Without Task Runner
+
+If you prefer not to install Task:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/wool-witch.git
+cd wool-witch
+npm install
+# Set up environment
+npm run setup:env
+# Start database (requires Docker)
+supabase start
+# Start development server
+npm run dev
+```
 
 [Full development guide ↓](#full-development-environment)
 
@@ -65,14 +93,17 @@ Before submitting:
 
 ## Full Development Environment
 
-### Prerequisites
+### Development Prerequisites
 
-Before you begin, ensure you have:
+Ensure these are installed and running:
 
-- Node.js (>= 18.0.0)
-- npm
-- [Docker Desktop](https://docs.docker.com/get-docker/) (for local database)
-- Git
+- **Node.js** (>= 18.0.0) - [Download here](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **Docker Desktop** - [Download here](https://docs.docker.com/get-docker/)
+  - ⚠️ **Must be running** before setup
+  - Verify with: `docker ps` (should list containers)
+- **Git** - [Download here](https://git-scm.com/downloads)
+- **Supabase CLI** (installed automatically by setup)
 
 ### Setting Up Your Development Environment
 
@@ -98,10 +129,10 @@ Before you begin, ensure you have:
    ```
 
    This command:
-   - ✅ Installs all dependencies
-   - ✅ Sets up environment files  
-   - ✅ Checks prerequisites
-   - ✅ Prepares the database
+   - ✅ Installs all dependencies (`npm install`)
+   - ✅ Creates `.env.local` with local Supabase config
+   - ✅ Checks prerequisites (Node.js, Docker)
+   - ✅ Installs Supabase CLI if needed
 
 5. **Start developing:**
 
@@ -109,7 +140,10 @@ Before you begin, ensure you have:
    task dev
    ```
 
-   This starts both the database and development server.
+   This command:
+   - 🚀 Starts local Supabase (database, auth, storage)
+   - 🔥 Starts Vite dev server with hot reload
+   - 📊 Opens Supabase Studio for database management
 
 **First run takes 2-5 minutes** (downloads Docker images). Subsequent runs take ~30 seconds.
 
@@ -275,12 +309,28 @@ All commands use [Task](https://taskfile.dev/). If you don't have Task installed
 ### Essential Commands
 
 ```bash
-task setup      # First-time setup (run once)
-task dev        # Start development environment
-task dev-only   # Start dev server only (if DB already running)
-task test       # Run quality checks (lint + typecheck)
-task build      # Build for production
+# Initial setup (run once)
+task setup      
+
+# Daily development
+task dev        # Start everything (database + dev server)
+task dev-only   # Start dev server only (if database already running)
+
+# Quality assurance
+task test       # Run linting + type checking
+task build      # Test production build
+
+# Database management
+task db:start   # Start database only
+task db:stop    # Stop database
+task db:reset   # Reset database (fresh start)
 ```
+
+**Alternative npm commands** (if not using Task):
+
+- `npm start` - Quick frontend-only development
+- `npm run test` - Quality checks
+- `npm run build` - Production build
 
 ### Database Commands
 

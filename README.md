@@ -4,19 +4,22 @@
 
 Browse our collection of unique, handcrafted crochet items perfect for gifts or treating yourself.
 
-## 🛍️ Start Shopping
+## 🚀 Try Wool Witch Now
 
 **Live Store**: [shop.woolwitch.com](https://shop.woolwitch.com) _(Coming Soon)_
-**Try Demo**: Run locally in 2 minutes ↓
 
-### Quick Demo Setup
+**Try the Demo Locally** (1 minute setup):
 
 ```bash
 npx degit dataGriff/wool-witch wool-witch
-cd wool-witch && npm install && npm run start
+cd wool-witch && npm install && npm start
 ```
 
-Visit <http://localhost:5173> - you're browsing Wool Witch!
+✨ **Visit <http://localhost:5173> - you're browsing Wool Witch!**
+
+*No additional setup required - the demo works out of the box with sample products.*
+
+**Troubleshooting**: If the app doesn't load, make sure port 5173 isn't in use or try `npm run dev` instead.
 
 ## ✨ What You'll Find
 
@@ -38,23 +41,14 @@ Visit <http://localhost:5173> - you're browsing Wool Witch!
 
 ## 👨‍💻 For Developers
 
-Want to contribute to Wool Witch? We'd love your help!
-
-### Quick Start (2 minutes)
+Want to contribute? Get started in seconds:
 
 ```bash
 git clone https://github.com/dataGriff/wool-witch.git
-cd wool-witch && npm run start
+cd wool-witch && npm start
 ```
 
-### Full Development Setup
-
-```bash
-# Install Task runner (recommended)
-task setup && task dev
-```
-
-👉 **See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete developer guide**
+👉 **See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete development guide**
 
 ## 🛠️ Tech Stack
 
@@ -82,25 +76,14 @@ task setup && task dev
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help makes this project better.
+We welcome contributions! Quick start:
 
-**Quick start for contributors:**
+1. Fork this repository
+2. Run `npm start` for instant setup
+3. Make your changes and test with `npm run test`
+4. Submit a pull request
 
-1. Fork the repository
-2. Run `npm run start` for instant setup
-3. Make your changes
-4. Run `npm run test` to ensure quality
-5. Submit a pull request
-
-**👉 Read the [Contributing Guide](CONTRIBUTING.md) for detailed instructions**
-
-### Development Features
-
-- Hot reload for instant feedback
-- Automated testing and linting
-- Dockerized local database
-- Database admin interface
-- One-command setup and deployment
+**👉 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete development setup**
 
 ## 📄 License
 
