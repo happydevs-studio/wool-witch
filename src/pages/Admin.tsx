@@ -11,6 +11,7 @@ interface ProductFormData {
   image_url: string;
   category: string;
   stock_quantity: string;
+  delivery_charge: string;
   is_available: boolean;
 }
 
@@ -30,6 +31,7 @@ export function Admin() {
     image_url: '',
     category: '',
     stock_quantity: '0',
+    delivery_charge: '0',
     is_available: true,
   });
 
@@ -64,6 +66,7 @@ export function Admin() {
       image_url: product.image_url,
       category: product.category,
       stock_quantity: product.stock_quantity.toString(),
+      delivery_charge: product.delivery_charge.toString(),
       is_available: product.is_available,
     });
     setImagePreview(product.image_url);
@@ -82,6 +85,7 @@ export function Admin() {
       image_url: '',
       category: '',
       stock_quantity: '0',
+      delivery_charge: '0',
       is_available: true,
     });
   };
@@ -181,6 +185,7 @@ export function Admin() {
 
       const price = parseFloat(formData.price);
       const stockQuantity = parseInt(formData.stock_quantity);
+      const deliveryCharge = parseFloat(formData.delivery_charge);
 
       if (isNaN(price) || price < 0) {
         alert('Please enter a valid price (must be 0 or greater)');
@@ -188,6 +193,10 @@ export function Admin() {
       }
       if (isNaN(stockQuantity) || stockQuantity < 0) {
         alert('Please enter a valid stock quantity (must be 0 or greater)');
+        return;
+      }
+      if (isNaN(deliveryCharge) || deliveryCharge < 0) {
+        alert('Please enter a valid delivery charge (must be 0 or greater)');
         return;
       }
 
@@ -198,6 +207,7 @@ export function Admin() {
         image_url: imageUrl.trim(),
         category: formData.category.trim(),
         stock_quantity: stockQuantity,
+        delivery_charge: deliveryCharge,
         is_available: formData.is_available,
       };
 
@@ -306,6 +316,16 @@ export function Admin() {
                   type="number"
                   value={formData.stock_quantity}
                   onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Charge (£)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.delivery_charge}
+                  onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>

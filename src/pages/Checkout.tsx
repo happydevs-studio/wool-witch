@@ -16,7 +16,7 @@ interface OrderDetails {
 }
 
 export function Checkout({ onNavigate }: CheckoutProps) {
-  const { items, total, clearCart } = useCart();
+  const { items, subtotal, deliveryTotal, total, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [formData, setFormData] = useState<OrderDetails>({
@@ -232,11 +232,11 @@ export function Checkout({ onNavigate }: CheckoutProps) {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-900">£{total.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">£{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-medium text-gray-900">FREE</span>
+                  <span className="text-gray-600">Delivery</span>
+                  <span className="font-medium text-gray-900">£{deliveryTotal.toFixed(2)}</span>
                 </div>
               </div>
 

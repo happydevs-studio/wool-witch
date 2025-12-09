@@ -53,9 +53,16 @@ export function ProductCard({ product }: ProductCardProps) {
         </p>
 
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-gray-900">
-            £{product.price.toFixed(2)}
-          </span>
+          <div>
+            <span className="text-2xl font-bold text-gray-900">
+              £{product.price.toFixed(2)}
+            </span>
+            {product.delivery_charge > 0 && (
+              <p className="text-xs text-gray-500">
+                + £{product.delivery_charge.toFixed(2)} delivery
+              </p>
+            )}
+          </div>
 
           <button
             onClick={handleAddToCart}

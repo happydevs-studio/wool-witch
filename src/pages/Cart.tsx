@@ -6,7 +6,7 @@ interface CartProps {
 }
 
 export function Cart({ onNavigate }: CartProps) {
-  const { items, removeItem, updateQuantity, total } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, deliveryTotal, total } = useCart();
 
   if (items.length === 0) {
     return (
@@ -75,6 +75,11 @@ export function Cart({ onNavigate }: CartProps) {
                       <p className="text-2xl font-bold text-gray-900">
                         £{item.product.price.toFixed(2)}
                       </p>
+                      {item.product.delivery_charge > 0 && (
+                        <p className="text-sm text-gray-600">
+                          + £{item.product.delivery_charge.toFixed(2)} delivery
+                        </p>
+                      )}
                     </div>
 
                     <div className="col-span-1 flex flex-col items-end space-y-3">
@@ -125,11 +130,11 @@ export function Cart({ onNavigate }: CartProps) {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-900">£{total.toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">£{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-medium text-gray-900">FREE</span>
+                  <span className="text-gray-600">Delivery</span>
+                  <span className="font-medium text-gray-900">£{deliveryTotal.toFixed(2)}</span>
                 </div>
               </div>
 
