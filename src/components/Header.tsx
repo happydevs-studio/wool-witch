@@ -22,7 +22,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       onNavigate('shop');
       setMobileMenuOpen(false);
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Keep minimal error logging for debugging
     }
   };
 

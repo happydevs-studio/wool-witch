@@ -24,7 +24,7 @@ export function Shop() {
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      // Keep minimal error logging for debugging
     } finally {
       setLoading(false);
     }

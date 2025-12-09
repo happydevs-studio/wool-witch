@@ -52,27 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function checkAdminStatus(userId: string) {
     try {
-      console.log('🔍 Checking admin status for user:', userId);
-      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .single();
 
-      console.log('📋 Admin check result:', { data, error });
-
       if (error) {
-        console.error('❌ Error from database:', error);
         throw error;
       }
       
       const isAdminUser = data?.role === 'admin';
-      console.log(`👤 User role: ${data?.role}, Is Admin: ${isAdminUser}`);
       setIsAdmin(isAdminUser);
     } catch (error) {
-      console.error('💥 Error checking admin status:', error);
-      console.error('🔧 Error details:', JSON.stringify(error, null, 2));
+      // Keep minimal error logging for debugging
       setIsAdmin(false);
     } finally {
       setLoading(false);
@@ -100,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (isLocal) {
       // Mock Google Auth for local development
-      console.log('🔧 Using mock Google Auth for local development');
       
       // Create a mock user that simulates Google sign-in
       const mockEmail = `google.user.${Date.now()}@gmail.com`;
@@ -131,15 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         
         if (signInError) throw signInError;
-        
-        console.log('✅ Mock Google Auth successful');
       } catch (error) {
-        console.error('❌ Mock Google Auth failed:', error);
         throw new Error('Mock Google authentication failed');
       }
     } else {
       // Production Google OAuth
-      console.log('🔐 Using production Google OAuth');
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -148,7 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (error) {
-        console.error('❌ Google OAuth failed:', error);
         throw error;
       }
     }

@@ -51,7 +51,7 @@ export function Admin() {
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      // Keep minimal error logging for debugging
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,6 @@ export function Admin() {
 
       return data.publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
       alert('Error uploading image. Please try again.');
       return null;
     } finally {
@@ -229,7 +228,6 @@ export function Admin() {
       await fetchAllProducts();
       handleCancel();
     } catch (error) {
-      console.error('Error saving product:', error);
       alert('Error saving product. Please try again.');
     }
   };
@@ -246,7 +244,6 @@ export function Admin() {
       if (error) throw error;
       await fetchAllProducts();
     } catch (error) {
-      console.error('Error deleting product:', error);
       alert('Error deleting product. Please try again.');
     }
   };
