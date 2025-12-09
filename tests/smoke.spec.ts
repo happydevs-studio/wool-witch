@@ -16,10 +16,10 @@ test.describe('Wool Witch - Smoke Test', () => {
     // Check that the header is present
     await expect(page.locator('header')).toBeVisible();
     
-    // Check for navigation elements
-    await expect(page.getByText('Shop')).toBeVisible();
-    await expect(page.getByText('About')).toBeVisible();
-    await expect(page.getByText('Contact')).toBeVisible();
+    // Check for navigation elements (use more specific selectors)
+    await expect(page.locator('header').getByText('Shop')).toBeVisible();
+    await expect(page.locator('header').getByText('About')).toBeVisible();
+    await expect(page.locator('header').getByText('Contact')).toBeVisible();
     
     // Check for cart icon/button (ShoppingBag icon with item count)
     await expect(page.locator('button', { has: page.locator('svg') }).first()).toBeVisible();
@@ -47,8 +47,8 @@ test.describe('Wool Witch - Smoke Test', () => {
   test('can navigate to about page', async ({ page }) => {
     await page.goto('/');
     
-    // Click on About link  
-    await page.getByText('About').click();
+    // Click on About link (use header selector to avoid footer link)
+    await page.locator('header').getByText('About').click();
     
     // Wait for about content to load
     await page.waitForTimeout(1000);
