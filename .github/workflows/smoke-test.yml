@@ -1,0 +1,140 @@
+name: Hourly Smoke Test
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+  workflow_run:
+    workflows: ["Deploy to GitHub Pages"]
+    types:
+      - completed
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      
+    - name: Run smoke test against production
+      run: npm run test:smoke:prod
+      
+    - name: Upload test results on failure
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: smoke-test-results-${{ github.run_id }}
+        path: |
+          test-results/
+          playwright-report/
+        retention-days: 7
+        
+    - name: Create issue on failure
+      uses: actions/github-script@v7
+      if: failure()
+      with:
+        script: |
+          const title = `🚨 Smoke Test Failed - ${new Date().toISOString()}`;
+          const body = `
+          ## Smoke Test Failure Report
+          
+          **Time**: ${new Date().toISOString()}
+          **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Site URL**: https://woolwitch.github.io
+          
+          ### What Happened
+          The hourly smoke test against the production site has failed. This could indicate:
+          
+          - Site is down or unreachable
+          - Critical functionality is broken
+          - Performance issues causing timeouts
+          - Recent deployment introduced bugs
+          
+          ### Next Steps
+          1. Check the [workflow run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details
+          2. Visit https://woolwitch.github.io manually to verify the issue
+          3. Review recent deployments for potential causes
+          4. Download test artifacts for detailed failure analysis
+          
+          ### Test Details
+          - **Test Suite**: Smoke tests (basic functionality check)
+          - **Browsers**: Chrome, Firefox, Safari
+          - **Tests**: Homepage load, navigation, responsive design, error detection
+          
+          This issue will auto-close when the smoke tests pass again.
+          
+          ---
+          *This issue was automatically created by the hourly smoke test workflow.*
+          `;
+          
+          // Check if there's already an open issue for smoke test failures
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['smoke-test-failure', 'automated'],
+            state: 'open'
+          });
+          
+          if (issues.length === 0) {
+            // Create new issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['bug', 'smoke-test-failure', 'automated', 'high-priority']
+            });
+          } else {
+            // Update existing issue
+            const issue = issues[0];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `🚨 **Another smoke test failure detected**\n\n**Time**: ${new Date().toISOString()}\n**Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nThe issue persists. Please check the latest workflow run for updated failure details.`
+            });
+          }
+          
+    - name: Close smoke test issues on success
+      uses: actions/github-script@v7
+      if: success()
+      with:
+        script: |
+          // Close any open smoke test failure issues since tests are passing
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['smoke-test-failure', 'automated'],
+            state: 'open'
+          });
+          
+          for (const issue of issues) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `✅ **Smoke tests are now passing**\n\n**Time**: ${new Date().toISOString()}\n**Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nThe site appears to be working correctly again. Auto-closing this issue.`
+            });
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed'
+            });
+          }
