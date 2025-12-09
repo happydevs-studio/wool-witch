@@ -108,6 +108,13 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
+[auth.external.google]
+enabled = true
+client_id = "your-google-client-id"
+secret = "your-google-client-secret"
+# Overrides the default auth redirectUrl.
+redirect_uri = ""
+
 [analytics]
 enabled = false
 port = 54327

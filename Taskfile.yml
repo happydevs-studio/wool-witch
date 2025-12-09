@@ -211,6 +211,14 @@ tasks:
     cmds:
       - ./bin/demo-upload.sh
 
+  setup-google-auth:
+    desc: Generate Google OAuth configuration for production
+    cmds:
+      - ./bin/setup-google-auth.sh
+      - echo ""
+      - echo "📚 For complete setup instructions, see:"
+      - echo "   docs/GOOGLE_AUTH_SETUP.md"
+
   # Code Quality
   lint:
     desc: Run ESLint

@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -94,6 +95,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function signInWithGoogle() {
+    const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('localhost');
+    
+    if (isLocal) {
+      // Mock Google Auth for local development
+      console.log('🔧 Using mock Google Auth for local development');
+      
+      // Create a mock user that simulates Google sign-in
+      const mockEmail = `google.user.${Date.now()}@gmail.com`;
+      const mockPassword = 'google-auth-mock-password';
+      
+      try {
+        // First, try to sign up the mock user
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: mockEmail,
+          password: mockPassword,
+          options: {
+            data: {
+              full_name: 'Google User',
+              avatar_url: 'https://via.placeholder.com/150/0066CC/FFFFFF?text=G',
+              provider: 'google'
+            }
+          }
+        });
+        
+        if (signUpError && !signUpError.message.includes('already registered')) {
+          throw signUpError;
+        }
+        
+        // Then sign in with the mock credentials
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: mockEmail,
+          password: mockPassword,
+        });
+        
+        if (signInError) throw signInError;
+        
+        console.log('✅ Mock Google Auth successful');
+      } catch (error) {
+        console.error('❌ Mock Google Auth failed:', error);
+        throw new Error('Mock Google authentication failed');
+      }
+    } else {
+      // Production Google OAuth
+      console.log('🔐 Using production Google OAuth');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`
+        }
+      });
+      
+      if (error) {
+        console.error('❌ Google OAuth failed:', error);
+        throw error;
+      }
+    }
+  }
+
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -108,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
       }}
     >
