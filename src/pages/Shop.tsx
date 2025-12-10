@@ -15,14 +15,12 @@ export function Shop() {
 
   async function fetchProducts() {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_available', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+    const { data, error } = await (supabase as any)
+      .from('products')
+      .select('*')
+      .eq('is_available', true)
+      .order('created_at', { ascending: false });      if (error) throw error;
+      setProducts((data as any) || []);
     } catch (error) {
       // Keep minimal error logging for debugging
     } finally {

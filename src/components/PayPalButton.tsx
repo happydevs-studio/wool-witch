@@ -9,6 +9,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { getPayPalConfig, isPayPalConfigured, PayPalErrors } from '../lib/paypalConfig';
 import { calculateSubtotal, calculateDeliveryTotal } from '../lib/orderService';
 import type { CartItem, OrderAddress, PayPalDetails } from '../types/database';
+import type { PayPalNamespace, PayPalCaptureResult } from '../vite-env.d.ts';
 
 interface PayPalButtonProps {
   // Order data
@@ -117,7 +118,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
     paypal.Buttons({
       style: buttonStyle,
       
-      createOrder: async (data, actions) => {
+      createOrder: async (_data: any, actions: any) => {
         try {
           // Validate cart items before creating order
           if (cartItems.length === 0) {
@@ -177,7 +178,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         }
       },
 
-      onApprove: async (data, actions) => {
+      onApprove: async (data: any, actions: any) => {
         try {
           // Capture the payment
           const captureResult = await actions.order.capture();
@@ -212,7 +213,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         }
       },
 
-      onError: (error) => {
+      onError: (error: any) => {
         console.error('PayPal error:', error);
         const friendlyMessage = typeof error === 'string' 
           ? PayPalErrors.getErrorMessage(error)
@@ -220,7 +221,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         onError(friendlyMessage);
       },
 
-      onCancel: (data) => {
+      onCancel: (data: any) => {
         console.log('PayPal payment cancelled:', data);
         if (onCancel) {
           onCancel();

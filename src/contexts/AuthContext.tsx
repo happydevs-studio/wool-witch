@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function checkAdminStatus(userId: string) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       
-      const isAdminUser = data?.role === 'admin';
+      const isAdminUser = (data as any)?.role === 'admin';
       setIsAdmin(isAdminUser);
     } catch (error) {
       // Keep minimal error logging for debugging
@@ -152,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isAdmin,
+        isAuthenticated: !!user,
         loading,
         signIn,
         signUp,

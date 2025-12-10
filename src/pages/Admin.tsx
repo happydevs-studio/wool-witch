@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'luc
 import { supabase } from '../lib/supabase';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
-import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderAddress, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
+import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
 
 interface ProductFormData {
   name: string;
@@ -52,13 +52,13 @@ export function Admin() {
 
   async function fetchAllProducts() {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data as any) || []);
     } catch (error) {
       // Keep minimal error logging for debugging
     } finally {
@@ -108,9 +108,9 @@ export function Admin() {
       price: product.price.toString(),
       image_url: product.image_url,
       category: product.category,
-      stock_quantity: product.stock_quantity.toString(),
-      delivery_charge: product.delivery_charge.toString(),
-      is_available: product.is_available,
+      stock_quantity: (product.stock_quantity ?? 0).toString(),
+      delivery_charge: (product.delivery_charge ?? 0).toString(),
+      is_available: product.is_available ?? false,
     });
     setImagePreview(product.image_url);
     setSelectedImage(null);
@@ -254,14 +254,14 @@ export function Admin() {
       };
 
       if (editingId) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('products')
           .update(productData)
           .eq('id', editingId);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('products')
           .insert([productData]);
 
@@ -279,7 +279,7 @@ export function Admin() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .delete()
         .eq('id', id);

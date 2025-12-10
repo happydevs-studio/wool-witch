@@ -195,4 +195,16 @@ interface PayPalPaymentRequestOptions {
   currency: string;
 }
 
+// Export types for use in components
+export type {
+  PayPalNamespace,
+  PayPalCaptureResult,
+  PayPalButtonsOptions,
+  PayPalApprovalData,
+  PayPalActions,
+  PayPalOrderData,
+  PayPalAmount,
+  PayPalItem
+};
+
 export {}; // Ensure this file is treated as a module

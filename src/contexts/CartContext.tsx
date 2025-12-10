@@ -92,7 +92,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const deliveryTotal = items.reduce((sum, item) => sum + item.product.delivery_charge * item.quantity, 0);
+  const deliveryTotal = items.reduce((sum, item) => sum + ((item.product.delivery_charge ?? 0) * item.quantity), 0);
   const total = subtotal + deliveryTotal;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 

@@ -151,6 +151,3 @@ export const PayPalErrors = {
     return recoverableErrors.includes(error);
   }
 };
-
-// Export PayPal types for use throughout the application
-export type { PayPalEnvironment, PayPalIntent, PayPalCurrency, PayPalConfig };

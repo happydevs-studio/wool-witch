@@ -86,7 +86,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
       }
 
       // Create order in database
-      const order = await createOrder(orderData);
+      await createOrder(orderData);
       
       // Clear cart and show success
       clearCart();
@@ -127,7 +127,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
       }
 
       // Create order in database
-      const order = await createOrder(orderData);
+      await createOrder(orderData);
       
       // Clear cart and show success
       clearCart();

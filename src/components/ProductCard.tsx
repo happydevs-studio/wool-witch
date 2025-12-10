@@ -25,12 +25,12 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
         />
-        {product.stock_quantity < 5 && product.stock_quantity > 0 && (
+        {product.stock_quantity != null && product.stock_quantity < 5 && product.stock_quantity > 0 && (
           <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
             Only {product.stock_quantity} left
           </div>
         )}
-        {product.stock_quantity === 0 && (
+        {product.stock_quantity != null && product.stock_quantity === 0 && (
           <div className="absolute top-3 right-3 bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-semibold">
             Sold Out
           </div>
@@ -57,7 +57,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <span className="text-2xl font-bold text-gray-900">
               £{product.price.toFixed(2)}
             </span>
-            {product.delivery_charge > 0 && (
+            {product.delivery_charge != null && product.delivery_charge > 0 && (
               <p className="text-xs text-gray-500">
                 + £{product.delivery_charge.toFixed(2)} delivery
               </p>
@@ -66,7 +66,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
           <button
             onClick={handleAddToCart}
-            disabled={product.stock_quantity === 0}
+            disabled={product.stock_quantity != null && product.stock_quantity === 0}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all font-medium ${
               isAdded
                 ? 'bg-green-600 hover:bg-green-700 text-white'

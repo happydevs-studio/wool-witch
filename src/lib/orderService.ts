@@ -78,7 +78,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   const total = subtotal + deliveryTotal;
 
   try {
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await (supabase as any)
       .from('orders')
       .insert({
         user_id: (await supabase.auth.getUser()).data.user?.id || null,
@@ -110,13 +110,13 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
     console.log('Creating order items:', JSON.stringify(orderItems, null, 2));
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await (supabase as any)
       .from('order_items')
       .insert(orderItems as any);
 
     if (itemsError) {
       console.error('Order items creation error:', itemsError);
-      await supabase.from('orders').delete().eq('id', (order as any).id);
+      await (supabase as any).from('orders').delete().eq('id', (order as any).id);
       throw new Error(`Failed to create order items: ${itemsError.message}`);
     }
 
@@ -131,7 +131,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
         paypal_details: paypalDetails || null
       };
 
-      const { error: paymentError } = await supabase
+      const { error: paymentError } = await (supabase as any)
         .from('payments')
         .insert(paymentData as any);
 
@@ -149,10 +149,10 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('orders')
-    .update({ status, updated_at: new Date().toISOString() } as any)
-    .eq('id' as any, orderId);
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', orderId);
 
   if (error) {
     throw new Error(`Failed to update order status: ${error.message}`);
@@ -177,7 +177,7 @@ export async function createPaymentRecord(
     paypal_details: paypalDetails || null
   };
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('payments')
     .insert(paymentData as any);
 
@@ -191,7 +191,7 @@ export async function createPaymentRecord(
 // ========================================
 
 export async function getUserOrders(limit: number = 50): Promise<Order[]> {
-  const { data: orders, error: ordersError } = await supabase
+  const { data: orders, error: ordersError } = await (supabase as any)
     .from('orders')
     .select(`*`)
     .order('created_at', { ascending: false })
@@ -205,7 +205,7 @@ export async function getUserOrders(limit: number = 50): Promise<Order[]> {
 }
 
 export async function getOrderById(orderId: string): Promise<Order | null> {
-  const { data: order, error } = await supabase
+  const { data: order, error } = await (supabase as any)
     .from('orders')
     .select(`*`)
     .eq('id', orderId)
@@ -227,7 +227,7 @@ export async function getAllOrders(options: {
   limit?: number;
   offset?: number;
 } = {}): Promise<Order[]> {
-  let query = supabase
+  let query = (supabase as any)
     .from('orders')
     .select(`*`);
 

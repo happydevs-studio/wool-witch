@@ -75,7 +75,7 @@ export function Cart({ onNavigate }: CartProps) {
                       <p className="text-2xl font-bold text-gray-900">
                         £{item.product.price.toFixed(2)}
                       </p>
-                      {item.product.delivery_charge > 0 && (
+                      {item.product.delivery_charge != null && item.product.delivery_charge > 0 && (
                         <p className="text-sm text-gray-600">
                           + £{item.product.delivery_charge.toFixed(2)} delivery
                         </p>

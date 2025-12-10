@@ -1012,9 +1012,11 @@ export interface OrderAddress {
   postcode: string;
 }
 
-// Strongly typed order with proper address and status
-export interface Order extends Database['woolwitch']['Tables']['orders']['Row'] {
-  address: OrderAddress;
+// Base order type from database
+export type BaseOrder = Database['woolwitch']['Tables']['orders']['Row'];
+
+// Strongly typed order with proper address and status  
+export interface Order extends BaseOrder {
   status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
   payment_method: 'card' | 'paypal';
 }
@@ -1028,8 +1030,11 @@ export interface OrderWithItems extends Order {
 // Order item with product information
 export type OrderItem = Database['woolwitch']['Tables']['order_items']['Row'];
 
+// Base payment type from database
+export type BasePayment = Database['woolwitch']['Tables']['payments']['Row'];
+
 // Payment record type
-export interface Payment extends Database['woolwitch']['Tables']['payments']['Row'] {
+export interface Payment extends BasePayment {
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   payment_method: 'card' | 'paypal';
   currency: string;
@@ -1049,7 +1054,7 @@ export interface PayPalDetails {
 
 // Cart item interface (for order creation)
 export interface CartItem {
-  product: Database['woolwitch']['Tables']['products']['Row'];
+  product: Product;
   quantity: number;
 }
 
@@ -1071,4 +1076,7 @@ export interface OrderSummary {
   total: number;
   itemCount: number;
 }
+
+// Product type export
+export type Product = Database['woolwitch']['Tables']['products']['Row'];
 
