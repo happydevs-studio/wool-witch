@@ -30,7 +30,7 @@ task db:reset # Reset local database with fresh migrations
 npm start     # Auto-creates .env.local, starts dev server
 ```
 
-**Database**: Local Supabase in Docker. Access Studio at `http://localhost:54323`, API at `http://localhost:54321`
+**Database**: Local Supabase in Docker. Access Studio at `http://localhost:54323`, API at `http://localhost:54321`. Migration files use `YYYYMMDDHHMMSS_woolwitch_description.sql` naming convention.
 
 **Environment**: Auto-generated `.env.local` with local Supabase credentials. See `Taskfile.yml` setup-env task for auto-creation logic.
 
@@ -74,7 +74,9 @@ npm start     # Auto-creates .env.local, starts dev server
 
 **Add New Product**: Update database via Admin UI or use `upload-products.mjs` script for batch operations
 
-**Database Changes**: Create migration files in `supabase/migrations/`, update types in `src/types/database.ts`
+**Database Changes**: Create migration files in `supabase/migrations/` using the naming convention `YYYYMMDDHHMMSS_woolwitch_description.sql`, update types in `src/types/database.ts`
+
+**Migration Naming**: All migration files must include the `woolwitch_` prefix after the timestamp to maintain consistency and clear project identification
 
 **Admin Testing**: Use SQL script `docs/promote_user_to_admin.sql` to grant admin role to test users
 

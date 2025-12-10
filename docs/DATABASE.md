@@ -2,6 +2,21 @@
 
 Database schema, security implementation, and product management for Wool Witch.
 
+## Migration Files
+
+All migration files must follow the naming convention:
+
+```
+YYYYMMDDHHMMSS_woolwitch_description.sql
+```
+
+For example:
+
+- `20251207120000_woolwitch_initial_setup.sql`
+- `20251209000000_woolwitch_add_orders_system.sql`
+
+The `woolwitch_` prefix after the timestamp ensures consistent identification of project-specific migrations.
+
 ## Schema Overview
 
 The application uses the `woolwitch` schema for namespace isolation and enhanced security.
