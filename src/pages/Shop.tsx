@@ -25,7 +25,7 @@ export function Shop() {
         console.error('Error fetching products:', error);
         throw error;
       }
-      setProducts(data || []);
+      setProducts((data as Product[]) || []);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
