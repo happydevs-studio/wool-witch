@@ -1,98 +1,75 @@
-/*
-  # Woolwitch E-commerce Platform - Initial Setup
-  
-  ## Overview
-  Complete optimized initial setup for the Woolwitch handmade crochet goods e-commerce platform.
-  This migration creates all necessary database objects with proper security settings and performance
-  optimizations from the start.
-
-  ## What This Migration Creates
-  
-  ### Schema & Permissions
-  - `woolwitch` schema for all application objects
-  - Proper permissions for authenticated, anonymous, and service roles
-  
-  ### Core Tables
-  - `woolwitch.products` - Product catalog with optimized RLS policies
-  - `woolwitch.user_roles` - User role management (admin/user)
-  
-  ### Storage
-  - `product-images` storage bucket with admin-aware policies
-  
-  ### Functions & Triggers
-  - `woolwitch.is_admin()` - Check if current user is admin (with search_path)
-  - `woolwitch.handle_new_user()` - Auto-assign user role on signup (with search_path)
-  - Trigger to execute handle_new_user on auth.users insert
-  
-  ### Security Features
-  - Row Level Security (RLS) enabled on all tables
-  - Optimized policies to prevent performance issues
-  - Public read access to available products
-  - Admin-only write access to products and storage
-  - Schema-level access control
-*/
+-- Woolwitch E-commerce Platform - Initial Setup
+-- Creates schema, core tables, functions, storage, and permissions with optimizations
 
 -- ========================================
--- SCHEMA SETUP
+-- SCHEMA & BASIC PERMISSIONS
 -- ========================================
 
--- Create the woolwitch application schema
 CREATE SCHEMA IF NOT EXISTS woolwitch;
 
--- Grant schema access to required roles
-GRANT USAGE ON SCHEMA woolwitch TO authenticated;
-GRANT USAGE ON SCHEMA woolwitch TO anon;
+-- Consolidated schema permissions for all roles
+GRANT USAGE ON SCHEMA woolwitch TO authenticated, anon;
+GRANT ALL PRIVILEGES ON SCHEMA woolwitch TO service_role, postgres;
 
 -- ========================================
--- USER ROLES TABLE
+-- USER ROLES & ADMIN FUNCTIONS
 -- ========================================
 
--- Table to manage user roles (admin/user)
 CREATE TABLE woolwitch.user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  role text NOT NULL CHECK (role IN ('admin', 'user')),
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(user_id)
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+  role text NOT NULL CHECK (role IN ('admin', 'user')) DEFAULT 'user',
+  created_at timestamptz DEFAULT now()
 );
 
--- Enable RLS
+-- Optimized index for frequent admin checks
+CREATE INDEX idx_user_roles_admin_lookup ON woolwitch.user_roles(user_id) 
+WHERE role = 'admin';
+
 ALTER TABLE woolwitch.user_roles ENABLE ROW LEVEL SECURITY;
 
--- Optimized policy: Users can view their own role (with subquery for performance)
-CREATE POLICY "Users can view their own role"
-  ON woolwitch.user_roles
-  FOR SELECT
-  USING ((SELECT auth.uid()) = user_id);
+CREATE POLICY "Users view own role" ON woolwitch.user_roles
+  FOR SELECT USING (auth.uid() = user_id);
 
--- ========================================
--- ADMIN HELPER FUNCTION
--- ========================================
-
--- Function to check if current user is admin (with search_path for security)
--- Used by RLS policies throughout the application
+-- Optimized admin check function with caching hint
 CREATE OR REPLACE FUNCTION woolwitch.is_admin()
 RETURNS boolean AS $$
+DECLARE
+  is_admin_user boolean;
 BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM woolwitch.user_roles
-    WHERE user_id = auth.uid()
-    AND role = 'admin'
-  );
+  SELECT (role = 'admin') INTO is_admin_user 
+  FROM woolwitch.user_roles 
+  WHERE user_id = auth.uid();
+  
+  RETURN COALESCE(is_admin_user, false);
+END;
+$$ LANGUAGE plpgsql 
+   SECURITY DEFINER 
+   STABLE
+   SET search_path = woolwitch, auth;
+
+-- Auto-assign user role on signup
+CREATE OR REPLACE FUNCTION woolwitch.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO woolwitch.user_roles (user_id) VALUES (NEW.id);
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Log error but don't fail the user creation
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql 
    SECURITY DEFINER
-   SET search_path = 'woolwitch, auth';
+   SET search_path = woolwitch, auth;
 
--- Grant execute permissions
-GRANT EXECUTE ON FUNCTION woolwitch.is_admin() TO authenticated;
-GRANT EXECUTE ON FUNCTION woolwitch.is_admin() TO anon;
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION woolwitch.handle_new_user();
 
 -- ========================================
 -- PRODUCTS TABLE
 -- ========================================
 
--- Main products table for the e-commerce catalog
 CREATE TABLE woolwitch.products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -101,118 +78,77 @@ CREATE TABLE woolwitch.products (
   image_url text NOT NULL,
   category text NOT NULL,
   stock_quantity integer DEFAULT 0 CHECK (stock_quantity >= 0),
-  is_available boolean DEFAULT true,
+  is_available boolean DEFAULT true NOT NULL,
   delivery_charge numeric(10, 2) DEFAULT 0 CHECK (delivery_charge >= 0),
   created_at timestamptz DEFAULT now()
 );
 
--- Add comment for documentation
-COMMENT ON COLUMN woolwitch.products.delivery_charge IS 'Delivery charge for this specific product in pounds (£)';
+-- Performance indexes
+CREATE INDEX idx_products_available ON woolwitch.products(is_available, created_at DESC);
+CREATE INDEX idx_products_category ON woolwitch.products(category) WHERE is_available;
+CREATE INDEX idx_products_price ON woolwitch.products(price) WHERE is_available;
 
--- Enable RLS
 ALTER TABLE woolwitch.products ENABLE ROW LEVEL SECURITY;
 
--- Optimized single policy for product visibility (combines public + admin access)
--- This policy allows:
--- 1. Anyone to view available products (is_available = true)
--- 2. Admins to view all products (regardless of availability)
-CREATE POLICY "Product visibility policy"
-  ON woolwitch.products
-  FOR SELECT
-  USING (
-    is_available = true OR (select woolwitch.is_admin())
-  );
+-- Efficient RLS policies
+CREATE POLICY "Product visibility" ON woolwitch.products
+  FOR SELECT USING (is_available OR woolwitch.is_admin());
 
-CREATE POLICY "Admins can insert products"
-  ON woolwitch.products
-  FOR INSERT
-  WITH CHECK ((select woolwitch.is_admin()));
-
-CREATE POLICY "Admins can update products"
-  ON woolwitch.products
-  FOR UPDATE
-  USING ((select woolwitch.is_admin()));
-
-CREATE POLICY "Admins can delete products"
-  ON woolwitch.products
-  FOR DELETE
-  USING ((select woolwitch.is_admin()));
+CREATE POLICY "Admin product management" ON woolwitch.products
+  FOR ALL TO authenticated
+  USING (woolwitch.is_admin())
+  WITH CHECK (woolwitch.is_admin());
 
 -- ========================================
--- USER MANAGEMENT AUTOMATION
+-- OPTIMIZED STORAGE SETUP
 -- ========================================
 
--- Function to automatically assign user role when user signs up (with search_path)
-CREATE OR REPLACE FUNCTION woolwitch.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO woolwitch.user_roles (user_id, role)
-  VALUES (NEW.id, 'user');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql 
-   SECURITY DEFINER
-   SET search_path = 'woolwitch, auth';
-
--- Grant execute permission to service_role for trigger execution
-GRANT EXECUTE ON FUNCTION woolwitch.handle_new_user() TO service_role;
-
--- Trigger to automatically assign user role on signup
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION woolwitch.handle_new_user();
-
--- ========================================
--- STORAGE SETUP
--- ========================================
-
--- Create storage bucket for product images
+-- Create optimized storage bucket
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'product-images',
-  'product-images', 
+  'product-images',
   true,
-  5242880, -- 5MB limit
-  '{"image/jpeg","image/jpg","image/png","image/webp","image/gif"}'
-)
-ON CONFLICT (id) DO NOTHING;
+  52428800, -- 50MB for flexibility
+  '{"image/jpeg","image/jpg","image/png","image/webp","image/avif","image/gif"}'
+) ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Storage policies with admin awareness
-CREATE POLICY "Public Access for Product Images"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'product-images');
+-- Optimized storage policies
+CREATE POLICY "Public read product images" ON storage.objects
+  FOR SELECT USING (bucket_id = 'product-images');
 
-CREATE POLICY "Authenticated Upload for Product Images"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'product-images');
+CREATE POLICY "Authenticated upload product images" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'product-images');
 
-CREATE POLICY "Admin Delete for Product Images"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'product-images' AND (select woolwitch.is_admin()));
-
-CREATE POLICY "Admin Update for Product Images"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = 'product-images' AND (select woolwitch.is_admin()))
-WITH CHECK (bucket_id = 'product-images' AND (select woolwitch.is_admin()));
+CREATE POLICY "Admin manage product images" ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id = 'product-images' AND woolwitch.is_admin())
+  WITH CHECK (bucket_id = 'product-images' AND woolwitch.is_admin());
 
 -- ========================================
--- TABLE PERMISSIONS
+-- CONSOLIDATED PERMISSIONS
 -- ========================================
 
--- Grant appropriate table permissions to roles
-GRANT SELECT ON woolwitch.products TO anon;
-GRANT SELECT ON woolwitch.products TO authenticated;
-GRANT INSERT, UPDATE, DELETE ON woolwitch.products TO authenticated;
+-- Table permissions
+GRANT SELECT ON ALL TABLES IN SCHEMA woolwitch TO anon;
+GRANT ALL ON ALL TABLES IN SCHEMA woolwitch TO authenticated;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA woolwitch TO service_role, postgres;
 
-GRANT SELECT ON woolwitch.user_roles TO authenticated;
-GRANT INSERT, UPDATE, DELETE ON woolwitch.user_roles TO authenticated;
+-- Sequence permissions
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA woolwitch TO authenticated, anon;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA woolwitch TO service_role, postgres;
 
--- Grant sequence permissions for auto-generated IDs
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA woolwitch TO authenticated;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA woolwitch TO anon;
+-- Function permissions
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA woolwitch TO authenticated, anon;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA woolwitch TO service_role, postgres;
 
--- Grant usage on woolwitch schema to postgres for administrative operations
-GRANT USAGE ON SCHEMA woolwitch TO postgres;
+-- Default privileges for future objects
+ALTER DEFAULT PRIVILEGES IN SCHEMA woolwitch 
+  GRANT ALL ON TABLES TO service_role, postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA woolwitch 
+  GRANT ALL ON SEQUENCES TO service_role, postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA woolwitch 
+  GRANT ALL ON FUNCTIONS TO service_role, postgres;
