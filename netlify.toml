@@ -9,6 +9,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 # Environment variables for build process
 [build.environment]
