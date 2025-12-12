@@ -1,25 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Types for our cached product data
-interface ProductListFields {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string;
-  category: string;
-  stock_quantity: number | null;
-  delivery_charge: number | null;
-  is_available: boolean | null;
-}
-
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
+const { createClient } = require('@supabase/supabase-js');
 
 // In-memory cache for this serverless function instance
-const cache = new Map<string, CacheEntry<any>>();
+const cache = new Map();
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 const LIST_TTL = 2 * 60 * 1000; // 2 minutes for product lists
 
@@ -38,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 /**
  * Clean expired cache entries
  */
-function cleanCache(): void {
+function cleanCache() {
   const now = Date.now();
   for (const [key, entry] of cache.entries()) {
     if (now > entry.timestamp + entry.ttl) {
@@ -50,7 +32,7 @@ function cleanCache(): void {
 /**
  * Get data from cache if available and not expired
  */
-function getFromCache<T>(key: string): T | null {
+function getFromCache(key) {
   cleanCache();
   const entry = cache.get(key);
   if (!entry) return null;
@@ -66,7 +48,7 @@ function getFromCache<T>(key: string): T | null {
 /**
  * Store data in cache
  */
-function setCache<T>(key: string, data: T, ttl: number = DEFAULT_TTL): void {
+function setCache(key, data, ttl = DEFAULT_TTL) {
   cache.set(key, {
     data,
     timestamp: Date.now(),
@@ -77,18 +59,13 @@ function setCache<T>(key: string, data: T, ttl: number = DEFAULT_TTL): void {
 /**
  * Fetch products from Supabase with caching
  */
-async function getProductList(options: {
-  category?: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
-} = {}): Promise<ProductListFields[]> {
+async function getProductList(options = {}) {
   const { category, search, offset = 0, limit = 50 } = options;
   
   const cacheKey = `products_list_${JSON.stringify(options)}`;
   
   // Check cache first
-  const cached = getFromCache<ProductListFields[]>(cacheKey);
+  const cached = getFromCache(cacheKey);
   if (cached) {
     return cached;
   }
@@ -113,7 +90,7 @@ async function getProductList(options: {
 
     if (error) throw error;
 
-    const products = (data as ProductListFields[]) || [];
+    const products = data || [];
     setCache(cacheKey, products, LIST_TTL);
     
     return products;
@@ -126,11 +103,11 @@ async function getProductList(options: {
 /**
  * Get available categories with caching
  */
-async function getCategories(): Promise<string[]> {
+async function getCategories() {
   const cacheKey = 'categories_list';
   
   // Check cache first
-  const cached = getFromCache<string[]>(cacheKey);
+  const cached = getFromCache(cacheKey);
   if (cached) {
     return cached;
   }
@@ -156,7 +133,7 @@ async function getCategories(): Promise<string[]> {
 /**
  * Netlify function handler
  */
-exports.handler = async (event: any, context: any) => {
+exports.handler = async (event, context) => {
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -183,18 +160,18 @@ exports.handler = async (event: any, context: any) => {
   }
 
   try {
-    const url = new URL(event.url);
+    const url = new URL('http://localhost' + event.path + '?' + (event.queryStringParameters ? new URLSearchParams(event.queryStringParameters).toString() : ''));
     const searchParams = url.searchParams;
     const action = searchParams.get('action') || 'products';
 
-    let responseData: any;
+    let responseData;
 
     switch (action) {
       case 'products': {
         const category = searchParams.get('category') || undefined;
         const search = searchParams.get('search') || undefined;
-        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
-        const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined;
+        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')) : undefined;
+        const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')) : undefined;
 
         responseData = await getProductList({ category, search, limit, offset });
         break;
