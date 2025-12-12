@@ -89,7 +89,7 @@ export function OptimizedImage({
 
   // Placeholder styles
   const placeholderStyles = {
-    blur: 'bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse',
+    blur: 'bg-gradient-to-br from-gray-100 to-gray-200',
     empty: 'bg-gray-100',
   };
 
