@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   getUserOrders, 
+  getOrderItems,
   formatOrderAddress, 
   formatOrderStatus, 
   getOrderStatusColor 
@@ -13,6 +14,8 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderItems, setOrderItems] = useState<Record<string, any[]>>({});
+  const [loadingItems, setLoadingItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -71,6 +74,32 @@ export default function Orders() {
       style: 'currency',
       currency: 'GBP'
     }).format(amount);
+  };
+
+  const loadOrderItems = async (orderId: string) => {
+    if (orderItems[orderId]) {
+      return; // Already loaded
+    }
+
+    setLoadingItems(prev => ({ ...prev, [orderId]: true }));
+    try {
+      const items = await getOrderItems(orderId);
+      setOrderItems(prev => ({ ...prev, [orderId]: items }));
+    } catch (error) {
+      console.error('Failed to load order items:', error);
+      setOrderItems(prev => ({ ...prev, [orderId]: [] }));
+    } finally {
+      setLoadingItems(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
+
+  const handleOrderDetailsToggle = async (order: Order) => {
+    const isOpening = selectedOrder?.id !== order.id;
+    setSelectedOrder(isOpening ? order : null);
+    
+    if (isOpening) {
+      await loadOrderItems(order.id);
+    }
   };
 
   return (
@@ -180,9 +209,7 @@ export default function Orders() {
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                     <button
-                      onClick={() =>
-                        setSelectedOrder(selectedOrder?.id === order.id ? null : order)
-                      }
+                      onClick={() => handleOrderDetailsToggle(order)}
                       className="text-rose-600 hover:text-rose-700 text-sm font-medium"
                     >
                       {selectedOrder?.id === order.id ? 'Hide Details' : 'View Details'}
@@ -207,12 +234,54 @@ export default function Orders() {
                         Order Details
                       </h4>
                       
-                      {/* Order Items Section - Placeholder */}
+                      {/* Order Items Section */}
                       <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-600">
-                          Order items will be displayed here once the order items relationship is implemented.
-                        </p>
-                        <div className="mt-2 text-xs text-gray-500">
+                        <h5 className="text-sm font-medium text-gray-900 mb-3">
+                          Order Items
+                        </h5>
+                        
+                        {loadingItems[order.id] ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-600"></div>
+                            <span className="ml-2 text-sm text-gray-600">Loading items...</span>
+                          </div>
+                        ) : orderItems[order.id] && orderItems[order.id].length > 0 ? (
+                          <div className="space-y-3">
+                            {orderItems[order.id].map((item: any) => (
+                              <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                                <div className="flex-1">
+                                  <h6 className="text-sm font-medium text-gray-900">
+                                    {item.product_name}
+                                  </h6>
+                                  <p className="text-xs text-gray-500">
+                                    Quantity: {item.quantity} × {formatCurrency(item.product_price)}
+                                  </p>
+                                  {item.delivery_charge > 0 && (
+                                    <p className="text-xs text-gray-500">
+                                      Delivery: {formatCurrency(item.delivery_charge)} each
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {formatCurrency(item.product_price * item.quantity)}
+                                  </p>
+                                  {item.delivery_charge > 0 && (
+                                    <p className="text-xs text-gray-500">
+                                      + {formatCurrency(item.delivery_charge * item.quantity)} delivery
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600">
+                            No items found for this order.
+                          </p>
+                        )}
+                        
+                        <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500">
                           <p>Order ID: {order.id}</p>
                           <p>Email: {order.email}</p>
                           <p>Status: {order.status}</p>

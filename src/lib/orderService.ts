@@ -175,6 +175,29 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   }
 }
 
+/**
+ * Get order items for a specific order
+ */
+export async function getOrderItems(orderId: string): Promise<any[]> {
+  try {
+    const { data, error } = await (supabase as any)
+      .from('order_items')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching order items:', error);
+      throw new Error('Failed to fetch order items');
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getOrderItems:', error);
+    throw error;
+  }
+}
+
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
   const { error } = await (supabase as any)
     .from('orders')
