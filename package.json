@@ -19,7 +19,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headless": "playwright test --reporter=line",
     "test:smoke": "playwright test tests/smoke.spec.ts",
-    "test:smoke:prod": "BASE_URL=https://woolwitch.github.io playwright test tests/smoke.spec.ts",
+    "test:smoke:prod": "BASE_URL=https://woolwitch.netlify.app playwright test tests/smoke.spec.ts",
     "upload-products": "node bin/upload-products.mjs",
     "setup-local": "npm run upload-products",
     "analyze-optimization": "node bin/analyze-optimization.mjs"

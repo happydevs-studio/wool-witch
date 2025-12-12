@@ -58,7 +58,7 @@ jobs:
           
           **Time**: ${new Date().toISOString()}
           **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          **Site URL**: https://woolwitch.github.io
+          **Site URL**: https://woolwitch.netlify.app
           
           ### What Happened
           The hourly smoke test against the production site has failed. This could indicate:
@@ -70,7 +70,7 @@ jobs:
           
           ### Next Steps
           1. Check the [workflow run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details
-          2. Visit https://woolwitch.github.io manually to verify the issue
+          2. Visit https://woolwitch.netlify.app manually to verify the issue
           3. Review recent deployments for potential causes
           4. Download test artifacts for detailed failure analysis
           
