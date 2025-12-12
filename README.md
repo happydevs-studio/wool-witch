@@ -69,6 +69,7 @@ cd wool-witch && npm start
 ### Developer Guides
 
 - **[Contributing Guide](CONTRIBUTING.md)** - Complete development setup
+- **[Payment Processing](docs/payments.md)** - Payment methods, testing, and deployment
 - **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Testing auth features
 - **[Product Image Management](docs/PRODUCT_IMAGE_MANAGEMENT.md)** - Managing product images and Supabase storage
 - **[Database Schema](docs/)** - Database structure and migrations

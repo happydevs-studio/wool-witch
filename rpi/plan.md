@@ -1,87 +1,135 @@
-# Current Issues and Remaining Tasks
+# PayPal Production Deployment Plan
 
-## Current Status
+## Overview
+This plan outlines the steps to enable PayPal payments in production for Wool Witch, including local testing verification and documentation consolidation.
 
-### ✅ Working Features  
-- **Product Display**: All products loading correctly from woolwitch schema
-- **Database**: Local Supabase running with 5 products successfully uploaded
-- **Schema Configuration**: Supabase client properly configured for woolwitch schema
-- **Development Environment**: Local Supabase running on http://localhost:54323
-- **Application**: Dev server runs on http://localhost:5174
+## Current Status ✅
+- Local PayPal testing is already functional with sandbox credentials
+- Complete PayPal integration with TypeScript support
+- Database schema for orders, payments, and order items
+- Checkout flow supports both card and PayPal payments
+- Environment-based configuration system
 
-### ❌ Current Issues
+## Phase 1: Production PayPal Setup
 
-#### Priority 1: TypeScript Errors (3 errors found)
-- **Supabase Client Schema**: `schema: "woolwitch"` not recognized as valid type in TypeScript
-- **Product Type Mismatches**: Data typing conflicts in Shop.tsx preventing proper type checking
+### 1. PayPal Production Account Setup
+- [ ] Create PayPal Business Account (if not exists)
+- [ ] Complete business verification in PayPal
+- [ ] Create production application in PayPal Developer Portal
+- [ ] Obtain production Client ID from PayPal
 
+### 2. Environment Configuration
+- [ ] Set `VITE_PAYPAL_CLIENT_ID_PRODUCTION` in production environment
+- [ ] Set `VITE_APP_ENV=production` in production deployment
+- [ ] Verify production PayPal configuration loads correctly
 
-## 🚨 Current Issues to Fix
+### 3. Production Deployment Changes
+- [ ] Update deployment pipeline to include PayPal production environment variables
+- [ ] Ensure PayPal SDK loads with production client ID in live environment
+- [ ] Configure production domain in PayPal application settings
 
-### Priority 1: Fix Database Schema Type Configuration
+## Phase 2: Testing and Validation
 
-**Problem**: Supabase client schema configuration causing TypeScript errors
+### 1. Local Testing Verification
+- [x] ~~Sandbox PayPal payments working in development~~
+- [x] ~~PayPal button renders correctly~~
+- [x] ~~Order creation flow with PayPal payments~~
+- [ ] Run comprehensive PayPal integration tests
 
-**Action Required**:
+### 2. Staging Environment Testing
+- [ ] Deploy to staging with production PayPal credentials
+- [ ] Test complete checkout flow with real PayPal account
+- [ ] Verify order data accuracy and payment verification
+- [ ] Test error handling and edge cases
 
-1. Fix Supabase client type configuration in `src/lib/supabase.ts` 
-2. Resolve `.eq()` parameter type mismatches in Shop.tsx
-3. Update database type exports to properly support woolwitch schema
+### 3. Production Validation
+- [ ] Smoke test on production deployment
+- [ ] Monitor PayPal webhook responses (if applicable)
+- [ ] Verify order confirmation emails
+- [ ] Test mobile responsiveness of PayPal checkout
 
-### Priority 2: Complete PayPal Integration (If Needed)
+## Phase 3: Documentation Consolidation
 
-**Current status**: PayPal components exist but may need updating if payment functionality is required
+### 1. Create Unified Payments Documentation
+- [x] Create `docs/payments.md` as the single source of truth
+- [x] Consolidate PayPal setup instructions
+- [x] Include both development and production configuration
+- [x] Add troubleshooting and testing guidance
 
-**Action Required**:
+### 2. Archive Specific Documentation
+- [x] Archive `docs/PAYPAL_SETUP.md` (mark as superseded)
+- [x] Update any references to point to `docs/payments.md`
+- [x] Ensure no duplicate or conflicting payment documentation
 
-1. Test existing PayPal integration 
-2. Add missing PayPal type definitions if compilation errors exist
-3. Set up real PayPal sandbox credentials when ready for testing
+### 3. Update Project Documentation
+- [x] Update README.md to reference unified payments documentation
+- [ ] Update CONTRIBUTING.md with payment testing procedures
+- [x] Ensure copilot-instructions.md reflects single payment docs approach
 
-### Priority 3: Authentication Context Issues (If Needed)
+## Phase 4: Monitoring and Maintenance
 
-**Problem**: May need `isAuthenticated` property for proper auth flow
+### 1. Payment Monitoring
+- [ ] Set up PayPal payment success/failure monitoring
+- [ ] Configure alerts for payment processing errors
+- [ ] Monitor order completion rates
 
-**Action Required**:
+### 2. Error Handling Enhancement
+- [ ] Improve PayPal error message display for customers
+- [ ] Add retry mechanisms for transient PayPal failures
+- [ ] Implement proper logging for payment debugging
 
-1. Verify if `isAuthenticated` property is needed in AuthContext
-2. Test admin role checking functionality
-3. Ensure proper user property accessibility
+## Implementation Checklist
 
-## 🎯 Immediate Action Items
+### Pre-Production
+- [ ] Verify all local PayPal tests pass
+- [ ] Confirm sandbox integration working correctly
+- [ ] Review PayPal integration code for production readiness
 
-### Step 1: Fix TypeScript Errors (CRITICAL)
+### Production Deployment
+- [ ] Obtain PayPal production credentials
+- [ ] Configure production environment variables
+- [ ] Deploy with production PayPal configuration
+- [ ] Verify PayPal production integration
 
-**Must complete for clean builds**
+### Documentation
+- [x] Create consolidated `docs/payments.md`
+- [x] Archive `docs/PAYPAL_SETUP.md`
+- [x] Update all documentation references
 
-1. **Database Types** - Fix Supabase schema configuration
-2. **Product Types** - Ensure proper typing in Shop component
-3. **Type Safety** - Resolve all TypeScript compilation issues
+### Post-Deployment
+- [ ] Monitor PayPal payment success rates
+- [ ] Test customer payment flow
+- [ ] Document any production-specific issues
 
-## 📊 Success Metrics
+## Risk Mitigation
 
-### Technical Targets
+### Technical Risks
+- **PayPal API Changes**: Monitor PayPal developer updates
+- **Environment Configuration**: Verify all environment variables in production
+- **Order Processing**: Ensure order creation handles PayPal failures gracefully
 
-- **Zero TypeScript Errors**: Clean build with full type safety
-- **Product Display**: All products loading correctly 
-- **Database Connection**: Reliable schema access
+### Business Risks
+- **Payment Failures**: Implement comprehensive error handling
+- **Customer Experience**: Ensure smooth PayPal checkout flow
+- **Transaction Security**: Verify PayPal payment verification working correctly
 
-### Business Objectives
+## Success Criteria
+1. ✅ Local PayPal testing functional
+2. ⬜ Production PayPal payments working
+3. ✅ Single consolidated payment documentation
+4. ⬜ Customer can complete purchase using PayPal in production
+5. ⬜ Order tracking and management working for PayPal orders
 
-- **Product Browsing**: Users can view all available products
-- **Database Performance**: Fast product loading
-- **Development Experience**: Clean codebase for future features
+## Timeline
+- **Phase 1**: 1-2 days (PayPal production setup)
+- **Phase 2**: 2-3 days (testing and validation)
+- **Phase 3**: 1 day (documentation consolidation)
+- **Phase 4**: Ongoing (monitoring and maintenance)
 
----
+**Total Estimated Time**: 4-6 days
 
-## 🚨 Current Development Focus
-
-**IMMEDIATE PRIORITY**: Fix TypeScript errors for clean production builds
-
-**Step 1**: Database type definitions and schema configuration
-**Step 2**: Verify all core functionality is working
-**Step 3**: Test payment integration if needed
-
-**Development Server**: <http://localhost:5174>
-**Database Admin**: <http://localhost:54323>
-**TypeScript Check**: `npm run typecheck` (currently failing with 3 errors)
+## Notes
+- Local PayPal testing is already functional with sandbox credentials in `.env.local`
+- Current PayPal integration supports both sandbox and production environments
+- Documentation consolidation will create single source of truth for payment information
+- Production deployment primarily requires PayPal business account and production client ID
