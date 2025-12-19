@@ -10,6 +10,7 @@ interface ProductListFields {
   price: number;
   image_url: string;
   category: string;
+  description: string;
   stock_quantity: number | null;
   delivery_charge: number | null;
   is_available: boolean | null;
@@ -121,39 +122,8 @@ export class DataService {
     limit?: number;
     offset?: number;
   } = {}): Promise<ProductListFields[]> {
-    const cacheKey = `products_list_${JSON.stringify(options)}`;
-    
-    // Check fresh cache first
-    const cached = this.getFromCache<ProductListFields[]>(cacheKey);
-    if (cached) {
-      // Still preload images if not already done
-      imagePreloader.preloadProductImages(cached);
-      return cached;
-    }
-
-    // Stale-while-revalidate: Return stale data immediately, refresh in background
-    const staleData = this.getStaleData<ProductListFields[]>(cacheKey);
-    if (staleData) {
-      // Refresh in background without blocking
-      this.refreshProductList(options, cacheKey).catch(console.error);
-      imagePreloader.preloadProductImages(staleData);
-      return staleData;
-    }
-
-    // Deduplicate concurrent requests for the same data
-    const pendingKey = `pending_${cacheKey}`;
-    if (this.pendingFetches.has(pendingKey)) {
-      return this.pendingFetches.get(pendingKey)! as Promise<ProductListFields[]>;
-    }
-
-    const fetchPromise = this.fetchProductListFromSource(options, cacheKey);
-    this.pendingFetches.set(pendingKey, fetchPromise);
-    
-    try {
-      return await fetchPromise;
-    } finally {
-      this.pendingFetches.delete(pendingKey);
-    }
+    // Simplified: Direct call to Supabase without caching for reliability
+    return this.fetchProductListFromSource(options, 'direct');
   }
 
   /**
@@ -173,7 +143,7 @@ export class DataService {
   }
 
   /**
-   * Actual fetch logic for product list
+   * Actual fetch logic for product list - simplified for reliability
    */
   private async fetchProductListFromSource(options: {
     category?: string;
@@ -181,38 +151,12 @@ export class DataService {
     limit?: number;
     offset?: number;
   }, cacheKey: string): Promise<ProductListFields[]> {
-    const { category, search, offset = 0 } = options;
-    const limit = options.limit || networkOptimizer.getOptimalBatchSize();
-
-    // Try Netlify function cache in production
-    if (NetlifyFunctionClient.shouldUseNetlifyCache()) {
-      try {
-        const products = await netlifyFunctionClient.getProducts({
-          category,
-          search,
-          limit,
-          offset
-        });
-        
-        // Store in local cache too
-        this.setCache(cacheKey, products, this.LIST_TTL);
-        
-        // Preload product images for better performance
-        if (products.length > 0) {
-          imagePreloader.preloadProductImages(products);
-        }
-        
-        return products;
-      } catch (error) {
-        console.warn('Netlify function cache failed, falling back to direct Supabase:', error);
-        // Fall through to direct Supabase query
-      }
-    }
+    const { category, search, offset = 0, limit = 50 } = options;
 
     try {
       let query = supabase
         .from('products')
-        .select('id, name, price, image_url, category, stock_quantity, delivery_charge, is_available')
+        .select('id, name, price, image_url, category, description, stock_quantity, delivery_charge, is_available')
         .eq('is_available', true)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -227,17 +171,12 @@ export class DataService {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-
-      const products = (data as ProductListFields[]) || [];
-      this.setCache(cacheKey, products, this.LIST_TTL);
-      
-      // Preload product images for better performance
-      if (products.length > 0) {
-        imagePreloader.preloadProductImages(products);
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
       }
       
-      return products;
+      return (data as ProductListFields[]) || [];
     } catch (error) {
       console.error('Error fetching product list:', error);
       throw error;
@@ -310,59 +249,23 @@ export class DataService {
    * Optimized: Uses DISTINCT query to only fetch unique categories, not all products
    */
   async getCategories(): Promise<string[]> {
-    const cacheKey = 'product_categories';
-    
-    // Check cache first (longer TTL for categories - they rarely change)
-    const cached = this.getFromCache<string[]>(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    try {
+      // Direct Supabase query for reliability
+      const { data, error } = await supabase
+        .from('products')
+        .select('category')
+        .eq('is_available', true);
 
-    // Deduplicate concurrent requests
-    const pendingKey = `pending_${cacheKey}`;
-    if (this.pendingFetches.has(pendingKey)) {
-      return this.pendingFetches.get(pendingKey)! as Promise<string[]>;
-    }
-
-    const fetchPromise = (async () => {
-      // Try Netlify function cache in production
-      if (NetlifyFunctionClient.shouldUseNetlifyCache()) {
-        try {
-          const categories = await netlifyFunctionClient.getCategories();
-          
-          // Store in local cache with extended TTL
-          this.setCache(cacheKey, categories, this.CATEGORY_TTL);
-          return categories;
-        } catch (error) {
-          console.warn('Netlify function cache failed for categories, falling back to direct Supabase:', error);
-          // Fall through to direct Supabase query
-        }
-      }
-
-      try {
-        // Optimized: Only select distinct categories, not all product data
-        // This massively reduces egress for stores with many products
-        const { data, error } = await supabase
-          .from('products')
-          .select('category')
-          .eq('is_available', true);
-
-        if (error) throw error;
-
-        const categories = [...new Set((data || []).map(item => item.category))].filter(Boolean).sort();
-        this.setCache(cacheKey, categories, this.CATEGORY_TTL); // 1 hour TTL
-        return categories;
-      } catch (error) {
-        console.error('Error fetching categories:', error);
+      if (error) {
+        console.error('Categories query error:', error);
         throw error;
       }
-    })();
 
-    this.pendingFetches.set(pendingKey, fetchPromise);
-    try {
-      return await fetchPromise;
-    } finally {
-      this.pendingFetches.delete(pendingKey);
+      const categories = [...new Set((data || []).map(item => item.category))].filter(Boolean).sort();
+      return categories;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      return []; // Return empty array instead of throwing
     }
   }
 

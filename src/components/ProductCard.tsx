@@ -1,7 +1,6 @@
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
-import { OptimizedImage } from './OptimizedImage';
 import type { Product } from '../types/database';
 
 interface ProductCardProps {
@@ -11,6 +10,8 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleAddToCart = () => {
     addItem(product, 1);
@@ -18,15 +19,38 @@ export function ProductCard({ product }: ProductCardProps) {
     setTimeout(() => setIsAdded(false), 2000);
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
       <div className="relative aspect-square overflow-hidden bg-gray-100">
-        <OptimizedImage
-          src={product.image_url}
-          alt={product.name}
-          className="group-hover:scale-110 transition-transform duration-300"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+            <div className="text-gray-400 text-sm">Loading...</div>
+          </div>
+        )}
+        {imageError ? (
+          <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+            <div className="text-gray-400 text-sm">Image unavailable</div>
+          </div>
+        ) : (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className={`w-full h-full object-cover transition-all duration-300 ${
+              imageLoaded ? 'opacity-100 group-hover:scale-105' : 'opacity-0'
+            }`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            loading="lazy"
+          />
+        )}
         {product.stock_quantity != null && product.stock_quantity < 5 && product.stock_quantity > 0 && (
           <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
             Only {product.stock_quantity} left

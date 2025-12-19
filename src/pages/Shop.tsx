@@ -25,6 +25,7 @@ export function Shop() {
       setProducts(productList as Product[]);
     } catch (error) {
       console.error('Failed to fetch products:', error);
+      setProducts([]); // Ensure products array is cleared on error
     } finally {
       setLoading(false);
     }
@@ -147,7 +148,7 @@ export function Shop() {
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-600 text-lg">
-              {searchTerm ? `No products found for "${searchTerm}".` : 'No products found in this category.'}
+              {searchTerm ? `No products found for "${searchTerm}".` : 'No products available at the moment.'}
             </p>
             {searchTerm && (
               <button
