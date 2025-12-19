@@ -77,10 +77,17 @@ export class OptimizedStorageService {
     transforms: ImageTransformOptions = {}
   ): string {
     try {
+      // For local development, skip transformations as imgproxy is not enabled by default
+      const isLocal = originalUrl.includes('localhost') || originalUrl.includes('127.0.0.1');
+      
+      if (isLocal) {
+        return originalUrl;
+      }
+
       const url = new URL(originalUrl);
       const params = new URLSearchParams();
 
-      // Add transformation parameters
+      // Add transformation parameters (only for production)
       if (transforms.width) {
         params.set('width', transforms.width.toString());
       }

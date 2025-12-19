@@ -39,7 +39,10 @@ export function OptimizedImage({
 
   // Intersection Observer for lazy loading
   useEffect(() => {
-    if (priority || !imageRef.current) return;
+    if (priority) return;
+    
+    const currentRef = imageRef.current;
+    if (!currentRef) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -55,7 +58,7 @@ export function OptimizedImage({
       }
     );
 
-    observer.observe(imageRef.current);
+    observer.observe(currentRef);
 
     return () => observer.disconnect();
   }, [priority]);
