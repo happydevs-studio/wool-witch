@@ -90,7 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithGoogle() {
-    const isLocal = import.meta.env.VITE_SUPABASE_URL?.includes('localhost');
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const isLocal = supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1');
     
     if (isLocal) {
       // Mock Google Auth for local development
@@ -125,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (signInError) throw signInError;
       } catch (error) {
+        console.error('Mock Google auth error:', error);
         throw new Error('Mock Google authentication failed');
       }
     } else {
