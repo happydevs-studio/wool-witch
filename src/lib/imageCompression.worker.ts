@@ -23,6 +23,15 @@ interface CompressionResult {
 }
 
 self.onmessage = async (e: MessageEvent<CompressionMessage>) => {
+  // Validate message type
+  if (!e.data || e.data.type !== 'compress') {
+    self.postMessage({
+      type: 'error',
+      error: 'Invalid message type',
+    } as CompressionResult);
+    return;
+  }
+
   const { imageData, fileName, width, height } = e.data;
 
   try {

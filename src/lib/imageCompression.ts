@@ -20,6 +20,8 @@ export async function compressImage(
 ): Promise<File> {
   // If already under limit, return as-is
   if (file.size <= MAX_SIZE_BYTES) {
+    // Call progress callback to maintain consistent behavior
+    onProgress?.(100);
     return file;
   }
 

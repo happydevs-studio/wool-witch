@@ -498,8 +498,16 @@ export function Admin() {
                     </div>
                   )}
                   
-                  {imagePreview && !compressing && (
+                  {imagePreview && (
                     <div className="relative">
+                      {compressing && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mx-auto mb-2"></div>
+                            <p className="text-sm text-gray-600 font-medium">Processing...</p>
+                          </div>
+                        </div>
+                      )}
                       <img
                         src={imagePreview}
                         alt="Preview"
