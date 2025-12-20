@@ -23,8 +23,8 @@ export async function compressImage(file: File): Promise<File> {
       
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+        const width = img.width;
+        const height = img.height;
         
         // Calculate scaling factor to reduce file size
         // Start with original dimensions and reduce quality
