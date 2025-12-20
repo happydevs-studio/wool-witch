@@ -63,9 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only log actual database errors
       if (error) {
         console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        return;
       }
       
-      const isAdminUser = (data as any)?.role === 'admin';
+      const isAdminUser = data?.role === 'admin';
       setIsAdmin(isAdminUser);
     } catch (error) {
       // Log unexpected errors for debugging
