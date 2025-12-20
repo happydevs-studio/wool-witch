@@ -5,6 +5,7 @@ import { dataService } from '../lib/dataService';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
+import { compressImage, formatFileSize } from '../lib/imageCompression';
 
 interface ProductFormData {
   name: string;
@@ -29,6 +30,7 @@ export function Admin() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -139,7 +141,7 @@ export function Admin() {
     });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
@@ -149,20 +151,40 @@ export function Admin() {
         return;
       }
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size must be less than 5MB');
-        return;
-      }
+      try {
+        setCompressing(true);
+        
+        // Compress image if needed
+        const originalSize = file.size;
+        const compressedFile = await compressImage(file);
+        
+        if (compressedFile.size < originalSize) {
+          console.log(`Image compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedFile.size)}`);
+        }
 
-      setSelectedImage(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+        setSelectedImage(compressedFile);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error('Error processing image:', error);
+        let userMessage = 'Failed to process image.';
+        if (error instanceof Error) {
+          const msg = error.message || '';
+          if (/format|type|mime|decode/i.test(msg)) {
+            userMessage = 'Image file is corrupted or in an unsupported format.';
+          } else if (/size|large|memory|quota|too big|too large/i.test(msg)) {
+            userMessage = 'Image is too large to compress effectively. Please choose a smaller image.';
+          }
+        }
+        alert(`${userMessage} If the problem persists, please try another file.`);
+      } finally {
+        setCompressing(false);
+      }
     }
   };
 
@@ -458,10 +480,11 @@ export function Admin() {
                       accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                       onChange={handleImageChange}
                       className="hidden"
+                      disabled={compressing}
                     />
                     <Upload className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
                     <span className="text-sm text-gray-600 truncate">
-                      {selectedImage ? selectedImage.name : 'Upload image (max 5MB)'}
+                      {compressing ? 'Compressing image...' : selectedImage ? selectedImage.name : 'Upload image (auto-compressed to 50KB)'}
                     </span>
                   </label>
                   {imagePreview && (
@@ -493,7 +516,7 @@ export function Admin() {
             <div className="hidden sm:flex sm:justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
               <button
                 onClick={handleCancel}
-                disabled={uploading}
+                disabled={uploading || compressing}
                 className="flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-5 h-5" />
@@ -501,11 +524,11 @@ export function Admin() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={uploading}
+                disabled={uploading || compressing}
                 className="flex items-center justify-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-5 h-5" />
-                <span>{uploading ? 'Uploading...' : 'Save'}</span>
+                <span>{uploading ? 'Uploading...' : compressing ? 'Compressing...' : 'Save'}</span>
               </button>
             </div>
           </div>
