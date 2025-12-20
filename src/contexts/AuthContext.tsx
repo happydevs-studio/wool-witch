@@ -59,9 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .maybeSingle();
 
-      // maybeSingle() returns null data if no row found, not an error
-      // Only treat it as an error if there's a real database error
-      if (error && error.code !== 'PGRST116') {
+      // maybeSingle() returns null data when no row is found (not an error)
+      // Only log actual database errors
+      if (error) {
         console.error('Error checking admin status:', error);
       }
       
