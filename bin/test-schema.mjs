@@ -95,7 +95,7 @@ async function testStorageBucket() {
   console.log("\n🖼️ Testing storage bucket access...");
   try {
     const { data, error } = await supabase.storage
-      .from('product-images')
+      .from('woolwitch-images')
       .list('', { limit: 5 });
 
     if (error) {

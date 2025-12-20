@@ -177,7 +177,7 @@ export function Admin() {
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('product-images')
+        .from('woolwitch-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -187,7 +187,7 @@ export function Admin() {
 
       // Get public URL
       const { data } = supabase.storage
-        .from('product-images')
+        .from('woolwitch-images')
         .getPublicUrl(filePath);
 
       return data.publicUrl;

@@ -19,7 +19,7 @@ interface ImageTransformOptions {
  * Enhanced storage service with optimization features
  */
 export class OptimizedStorageService {
-  private bucketName = 'product-images';
+  private bucketName = 'woolwitch-images';
   
   /**
    * Upload image with optimization

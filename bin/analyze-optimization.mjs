@@ -53,13 +53,13 @@ async function analyzeStorageOptimization() {
   try {
     // Get storage bucket info
     const { data: files, error } = await supabase.storage
-      .from('product-images')
+      .from('woolwitch-images')
       .list('', { limit: 1000 });
 
     if (error) throw error;
 
     if (!files || files.length === 0) {
-      console.log("📁 No files found in product-images bucket");
+      console.log("📁 No files found in woolwitch-images bucket");
       return;
     }
 

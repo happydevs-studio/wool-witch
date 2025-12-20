@@ -119,7 +119,7 @@ async function uploadImage(imagePath, fileName) {
     const imageBuffer = readFileSync(imagePath);
 
     const { data, error } = await supabase.storage
-      .from("product-images")
+      .from("woolwitch-images")
       .upload(fileName, imageBuffer, {
         contentType: getContentType(fileName),
         cacheControl: "3600",
@@ -134,7 +134,7 @@ async function uploadImage(imagePath, fileName) {
     // Get public URL
     const {
       data: { publicUrl },
-    } = supabase.storage.from("product-images").getPublicUrl(fileName);
+    } = supabase.storage.from("woolwitch-images").getPublicUrl(fileName);
 
     console.log(`✅ Uploaded ${fileName} -> ${publicUrl}`);
     return publicUrl;

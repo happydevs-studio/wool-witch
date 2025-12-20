@@ -106,8 +106,8 @@ CREATE POLICY "Admin product management" ON woolwitch.products
 -- Create optimized storage bucket
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-  'product-images',
-  'product-images',
+  'woolwitch-images',
+  'woolwitch-images',
   true,
   52428800, -- 50MB for flexibility
   '{"image/jpeg","image/jpg","image/png","image/webp","image/avif","image/gif"}'
@@ -117,16 +117,16 @@ VALUES (
 
 -- Optimized storage policies
 CREATE POLICY "Public read product images" ON storage.objects
-  FOR SELECT USING (bucket_id = 'product-images');
+  FOR SELECT USING (bucket_id = 'woolwitch-images');
 
 CREATE POLICY "Authenticated upload product images" ON storage.objects
   FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'product-images');
+  WITH CHECK (bucket_id = 'woolwitch-images');
 
 CREATE POLICY "Admin manage product images" ON storage.objects
   FOR ALL TO authenticated
-  USING (bucket_id = 'product-images' AND woolwitch.is_admin())
-  WITH CHECK (bucket_id = 'product-images' AND woolwitch.is_admin());
+  USING (bucket_id = 'woolwitch-images' AND woolwitch.is_admin())
+  WITH CHECK (bucket_id = 'woolwitch-images' AND woolwitch.is_admin());
 
 -- ========================================
 -- CONSOLIDATED PERMISSIONS

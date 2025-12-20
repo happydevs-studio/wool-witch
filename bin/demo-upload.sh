@@ -44,7 +44,7 @@ echo
 # Run the upload script
 echo "🚀 Running product upload script..."
 echo "   This will:"
-echo "   1. Upload images to Supabase Storage bucket 'product-images'"
+echo "   1. Upload images to Supabase Storage bucket 'woolwitch-images'"
 echo "   2. Add products to the database with storage URLs"
 echo "   3. Handle updates if products already exist"
 echo
