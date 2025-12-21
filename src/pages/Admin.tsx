@@ -172,7 +172,16 @@ export function Admin() {
         reader.readAsDataURL(compressedFile);
       } catch (error) {
         console.error('Error processing image:', error);
-        alert('Failed to process image. Please try another file.');
+        let userMessage = 'Failed to process image.';
+        if (error instanceof Error) {
+          const msg = error.message || '';
+          if (/format|type|mime|decode/i.test(msg)) {
+            userMessage = 'Image file is corrupted or in an unsupported format.';
+          } else if (/size|large|memory|quota|too big|too large/i.test(msg)) {
+            userMessage = 'Image is too large to compress effectively. Please choose a smaller image.';
+          }
+        }
+        alert(`${userMessage} If the problem persists, please try another file.`);
       } finally {
         setCompressing(false);
       }
