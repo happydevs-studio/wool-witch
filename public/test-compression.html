@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Compression Test Harness</title>
+</head>
+<body>
+  <h1>Image Compression Test Harness</h1>
+  <p>This page loads the compression utility for testing purposes.</p>
+  
+  <script type="module">
+    // Import the compression utility
+    import { compressImage, formatFileSize } from '/src/lib/imageCompression.ts';
+    
+    // Make functions globally available for Playwright tests
+    window.compressImage = compressImage;
+    window.formatFileSize = formatFileSize;
+    
+    // Signal that the module is loaded
+    window.compressionModuleReady = true;
+  </script>
+</body>
+</html>

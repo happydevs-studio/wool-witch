@@ -2,7 +2,9 @@
 
 This directory contains automated tests for the Wool Witch application.
 
-## Smoke Test
+## Test Suites
+
+### Smoke Test
 
 The smoke test (`smoke.spec.ts`) is a simple test suite that verifies the basic functionality of the Wool Witch website. It checks that:
 
@@ -12,7 +14,35 @@ The smoke test (`smoke.spec.ts`) is a simple test suite that verifies the basic 
 - The site is responsive
 - No critical JavaScript errors occur
 
+### Image Compression Tests
+
+The image compression test suite (`imageCompression.spec.ts`) thoroughly tests the image compression utility used for product uploads. It verifies:
+
+- Images under 50KB are returned unchanged
+- Images over 50KB are properly compressed to under 50KB
+- Quality reduction algorithm works correctly
+- Dimension scaling is applied when quality reduction alone isn't sufficient
+- Very large images are handled without infinite recursion or hanging
+- The `formatFileSize` utility formats byte sizes correctly
+- Invalid image files are handled gracefully with proper error messages
+- Original filenames are preserved after compression
+
+These tests use a test harness page (`public/test-compression.html`) that loads the compression module via Vite, making it available for testing in the browser context.
+
 ## Running Tests
+
+### Specific Test Suites
+
+```bash
+# Run smoke tests only
+npm run test:smoke
+
+# Run image compression tests only
+npm run test:e2e -- tests/imageCompression.spec.ts
+
+# Run a specific test suite on a single browser
+npm run test:e2e -- tests/imageCompression.spec.ts --project=chromium
+```
 
 ### Against Local Development Server
 
