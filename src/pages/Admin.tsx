@@ -31,6 +31,7 @@ export function Admin() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -153,10 +154,13 @@ export function Admin() {
 
       try {
         setCompressing(true);
+        setCompressionProgress(0);
         
-        // Compress image if needed
+        // Compress image if needed with progress callback
         const originalSize = file.size;
-        const compressedFile = await compressImage(file);
+        const compressedFile = await compressImage(file, (progress) => {
+          setCompressionProgress(Math.round(progress));
+        });
         
         if (compressedFile.size < originalSize) {
           console.log(`Image compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedFile.size)}`);
@@ -184,6 +188,7 @@ export function Admin() {
         alert(`${userMessage} If the problem persists, please try another file.`);
       } finally {
         setCompressing(false);
+        setCompressionProgress(0);
       }
     }
   };
@@ -474,7 +479,11 @@ export function Admin() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
                 <div className="space-y-3">
-                  <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-rose-500 transition-colors">
+                  <label className={`flex items-center justify-center w-full px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
+                    compressing 
+                      ? 'border-rose-400 bg-rose-50 cursor-not-allowed' 
+                      : 'border-gray-300 cursor-pointer hover:border-rose-500'
+                  }`}>
                     <input
                       type="file"
                       accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
@@ -482,13 +491,32 @@ export function Admin() {
                       className="hidden"
                       disabled={compressing}
                     />
-                    <Upload className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                    <Upload className={`w-4 h-4 mr-2 flex-shrink-0 ${compressing ? 'text-rose-500 animate-pulse' : 'text-gray-400'}`} />
                     <span className="text-sm text-gray-600 truncate">
-                      {compressing ? 'Compressing image...' : selectedImage ? selectedImage.name : 'Upload image (auto-compressed to 50KB)'}
+                      {compressing ? `Compressing image... ${compressionProgress}%` : selectedImage ? selectedImage.name : 'Upload image (auto-compressed to 50KB)'}
                     </span>
                   </label>
+                  
+                  {/* Progress bar during compression */}
+                  {compressing && (
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-rose-500 h-2 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${compressionProgress}%` }}
+                      />
+                    </div>
+                  )}
+                  
                   {imagePreview && (
                     <div className="relative">
+                      {compressing && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mx-auto mb-2"></div>
+                            <p className="text-sm text-gray-600 font-medium">Processing...</p>
+                          </div>
+                        </div>
+                      )}
                       <img
                         src={imagePreview}
                         alt="Preview"
