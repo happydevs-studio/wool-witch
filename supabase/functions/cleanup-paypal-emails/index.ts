@@ -20,6 +20,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface PayPalDetails {
+  paypal_order_id?: string;
+  payer_id?: string;
+  payer_email?: string;
+  transaction_id?: string;
+  capture_id?: string;
+  gross_amount?: number;
+  fee_amount?: number;
+  net_amount?: number;
+}
+
+interface PaymentRecord {
+  id: string;
+  created_at: string;
+  paypal_details: PayPalDetails | null;
+}
+
 interface CleanupResult {
   success: boolean;
   recordsCleaned: number;
@@ -72,7 +89,9 @@ serve(async (req) => {
       throw new Error(`Query failed: ${queryError.message}`);
     }
 
-    if (!paymentsToClean || paymentsToClean.length === 0) {
+    const payments = (paymentsToClean || []) as PaymentRecord[];
+
+    if (payments.length === 0) {
       console.log('No payments require cleanup');
       const result: CleanupResult = {
         success: true,
@@ -87,13 +106,12 @@ serve(async (req) => {
     }
 
     // Filter payments that still have payer_email
-    const paymentsWithEmail = paymentsToClean.filter(payment => {
-      const details = payment.paypal_details as any;
-      return details && details.payer_email;
+    const paymentsWithEmail = payments.filter(payment => {
+      return payment.paypal_details && payment.paypal_details.payer_email;
     });
 
     if (paymentsWithEmail.length === 0) {
-      console.log(`Found ${paymentsToClean.length} old PayPal payments, but none have payer_email`);
+      console.log(`Found ${payments.length} old PayPal payments, but none have payer_email`);
       const result: CleanupResult = {
         success: true,
         recordsCleaned: 0,
@@ -110,18 +128,21 @@ serve(async (req) => {
 
     // Update each payment to remove payer_email
     let cleanedCount = 0;
-    const errors = [];
+    const errors: Array<{ id: string; error: string }> = [];
 
     for (const payment of paymentsWithEmail) {
-      const details = payment.paypal_details as any;
+      if (!payment.paypal_details) continue;
       
-      // Remove payer_email from the JSONB object
-      delete details.payer_email;
+      // Create a copy and remove payer_email from the JSONB object
+      const cleanedDetails: PayPalDetails = {
+        ...payment.paypal_details,
+      };
+      delete cleanedDetails.payer_email;
 
       // Update the payment record
       const { error: updateError } = await supabase
         .from('payments')
-        .update({ paypal_details: details })
+        .update({ paypal_details: cleanedDetails })
         .eq('id', payment.id);
 
       if (updateError) {
