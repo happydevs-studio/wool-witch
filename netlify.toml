@@ -1,0 +1,72 @@
+# Netlify Build Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # Build command to generate production files
+  command = "npm run build"
+  
+  # Directory containing the production build files
+  publish = "dist"
+
+# Build environment configuration
+[build.environment]
+  # Node version for build process
+  NODE_VERSION = "20"
+
+# Security: Secrets Scanning Configuration
+# https://docs.netlify.com/security/secrets/secrets-scanning/
+[build.processing.secrets]
+  # Allow these environment variables to be present in build output
+  # These are Supabase public keys that are SAFE to expose:
+  # - VITE_SUPABASE_URL: Public URL for Supabase project
+  # - VITE_SUPABASE_ANON_KEY: Anonymous/public key designed for client-side use
+  # 
+  # These keys are protected by Supabase Row Level Security (RLS) policies
+  # and are intended to be publicly accessible. See:
+  # https://supabase.com/docs/guides/api#api-url-and-keys
+  omit_keys = [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY"
+  ]
+
+# Headers for enhanced security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking attacks
+    X-Frame-Options = "DENY"
+    
+    # Prevent MIME type sniffing
+    X-Content-Type-Options = "nosniff"
+    
+    # Enable XSS protection
+    X-XSS-Protection = "1; mode=block"
+    
+    # Control referrer information
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # Content Security Policy
+    # Allows Supabase, Stripe, and PayPal integrations
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https: blob:;
+      font-src 'self' data:;
+      connect-src 'self' https://*.supabase.co https://api.stripe.com https://www.paypal.com;
+      frame-src https://js.stripe.com https://www.paypal.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      upgrade-insecure-requests;
+    """
+
+# Redirect rules for single-page application
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  # Don't apply redirect to files that exist
+  conditions = {path = "^(?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|xml|txt|html)$).*"}
