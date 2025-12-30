@@ -73,6 +73,7 @@ cd wool-witch && npm start
 - **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Testing auth features
 - **[Product Image Management](docs/PRODUCT_IMAGE_MANAGEMENT.md)** - Managing product images and Supabase storage
 - **[Database Schema](docs/)** - Database structure and migrations
+- **[Deployment Security](docs/DEPLOYMENT_SECURITY.md)** - Security best practices and deployment guide
 - **Deployment Guide** - Production deployment *Coming Soon*
 
 ## 🤝 Contributing

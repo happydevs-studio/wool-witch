@@ -34,12 +34,29 @@
   for = "/*"
   [headers.values]
     # Prevent clickjacking attacks
+# Netlify Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Security Headers
+# These headers enhance security by preventing common web vulnerabilities
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent the site from being embedded in iframes (clickjacking protection)
     X-Frame-Options = "DENY"
     
     # Prevent MIME type sniffing
     X-Content-Type-Options = "nosniff"
     
     # Enable XSS protection
+    # Enable XSS protection in older browsers
     X-XSS-Protection = "1; mode=block"
     
     # Control referrer information
@@ -55,6 +72,26 @@
       font-src 'self' data:;
       connect-src 'self' https://*.supabase.co https://api.stripe.com https://www.paypal.com;
       frame-src https://js.stripe.com https://www.paypal.com;
+    # Restrict browser features
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+    
+    # Strict Transport Security (force HTTPS)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    
+    # Content Security Policy
+    # Note: 'unsafe-inline' and 'unsafe-eval' are required for:
+    # - Vite's HMR and development tooling
+    # - React's inline styles
+    # - Third-party integrations (Stripe, Google Analytics)
+    # For enhanced security, consider using nonces in production builds
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com;
+      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      frame-src https://js.stripe.com https://hooks.stripe.com;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
@@ -70,3 +107,32 @@
   force = false
   # Don't apply redirect to files that exist
   conditions = {path = "^(?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|xml|txt|html)$).*"}
+# Cache static assets for better performance
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirects
+# Add any URL redirects here
+# [[redirects]]
+#   from = "/old-path"
+#   to = "/new-path"
+#   status = 301
+
+# Build context-specific settings
+[context.production]
+  [context.production.environment]
+    NODE_ENV = "production"
+
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    NODE_ENV = "production"
+
+[context.branch-deploy]
+  [context.branch-deploy.environment]
+    NODE_ENV = "production"
+
+# Plugin configuration (if needed)
+# [[plugins]]
+#   package = "@netlify/plugin-lighthouse"
