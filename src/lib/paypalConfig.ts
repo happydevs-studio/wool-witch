@@ -28,17 +28,6 @@ export const getPayPalClientId = (): string => {
     ? import.meta.env.VITE_PAYPAL_CLIENT_ID_PRODUCTION
     : import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX;
 
-  // Debug logging in development
-  if (import.meta.env.DEV) {
-    console.log('PayPal Environment Debug:', {
-      VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
-      isProduction,
-      VITE_PAYPAL_CLIENT_ID_SANDBOX: import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX,
-      clientIdFound: !!clientId,
-      clientIdLength: clientId?.length || 0
-    });
-  }
-
   if (!clientId) {
     throw new Error(
       `PayPal client ID not configured for ${isProduction ? 'production' : 'sandbox'} environment. ` +
@@ -115,7 +104,7 @@ export const PayPalTestUtils = {
   }),
 
   /**
-   * Log PayPal configuration for debugging
+   * Log PayPal configuration for debugging (development only)
    */
   logConfig: (): void => {
     if (import.meta.env.DEV) {
@@ -123,8 +112,7 @@ export const PayPalTestUtils = {
         environment: getPayPalEnvironment(),
         currency: 'GBP',
         intent: 'capture',
-        configured: isPayPalConfigured(),
-        clientIdLength: getPayPalClientId().length
+        configured: isPayPalConfigured()
       });
     }
   }

@@ -80,7 +80,10 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   const validation = await validateCartProducts(cartItems);
   
   if (!validation.valid) {
-    console.error('Invalid cart items detected:', validation.errors);
+    // Log validation errors in development only
+    if (import.meta.env.DEV) {
+      console.error('Invalid cart items detected:', validation.errors);
+    }
     
     // Instead of throwing an error, suggest automatic cleanup
     throw new Error(
@@ -111,8 +114,11 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       .single();
 
     if (orderError || !order) {
-      console.error('Order creation error:', orderError);
-      throw new Error(`Failed to create order: ${orderError?.message || 'Unknown error'}`);
+      // Log error details only in development
+      if (import.meta.env.DEV) {
+        console.error('Order creation error:', orderError);
+      }
+      throw new Error('Failed to create order. Please try again.');
     }
 
     const orderItems = cartItems.map(item => ({
@@ -124,26 +130,29 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       delivery_charge: item.product.delivery_charge || 0
     }));
 
-    console.log('Creating order items for order:', (order as any).id);
-    console.log('Order items to insert:', JSON.stringify(orderItems, null, 2));
-
     const { error: itemsError } = await (supabase as any)
       .from('order_items')
       .insert(orderItems as any);
 
     if (itemsError) {
-      console.error('Order items creation error:', itemsError);
-      console.error('Failed order items data:', JSON.stringify(orderItems, null, 2));
+      // Log error details only in development
+      if (import.meta.env.DEV) {
+        console.error('Order items creation error:', itemsError);
+      }
       
       // Clean up the order if items failed
       await (supabase as any).from('orders').delete().eq('id', (order as any).id);
       
-      // Provide more specific error message
-      const errorMsg = itemsError.message || 'Unknown error';
-      if (errorMsg.includes('foreign key constraint')) {
+      // Provide user-friendly error message based on error code
+      // PostgreSQL error code 23503 = foreign_key_violation
+      // Prioritize error code check as it's more reliable than string matching
+      const errorCode = itemsError.code;
+      const errorMsg = itemsError.message || '';
+      
+      if (errorCode === '23503' || errorMsg.includes('foreign key constraint')) {
         throw new Error('One or more products in your cart are no longer available. Please refresh the page and try again.');
       }
-      throw new Error(`Failed to create order items: ${errorMsg}`);
+      throw new Error('Failed to process order items. Please try again.');
     }
 
     if (paymentId) {
@@ -163,14 +172,20 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
         .insert(paymentData as any);
 
       if (paymentError) {
-        console.error('Payment record creation error:', paymentError);
+        // Log error details only in development
+        if (import.meta.env.DEV) {
+          console.error('Payment record creation error:', paymentError);
+        }
       }
     }
 
     return order as unknown as Order;
 
   } catch (error) {
-    console.error('Error creating order:', error);
+    // Log error details only in development
+    if (import.meta.env.DEV) {
+      console.error('Error creating order:', error);
+    }
     throw error;
   }
 }
@@ -187,13 +202,19 @@ export async function getOrderItems(orderId: string): Promise<any[]> {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching order items:', error);
+      // Log error details only in development
+      if (import.meta.env.DEV) {
+        console.error('Error fetching order items:', error);
+      }
       throw new Error('Failed to fetch order items');
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error in getOrderItems:', error);
+    // Log error details only in development
+    if (import.meta.env.DEV) {
+      console.error('Error in getOrderItems:', error);
+    }
     throw error;
   }
 }
@@ -346,7 +367,10 @@ export async function getOrderStatistics(): Promise<{
 export function validateOrderData(orderData: CreateOrderData): string[] {
   const errors: string[] = [];
 
-  if (!orderData.email || !orderData.email.includes('@')) {
+  // Use the same robust email regex as database constraint and Edge function
+  // Prevents consecutive dots, leading/trailing special chars, etc.
+  const emailRegex = /^[A-Za-z0-9]([A-Za-z0-9._%-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/;
+  if (!orderData.email || !emailRegex.test(orderData.email)) {
     errors.push('Valid email address is required');
   }
 

@@ -96,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signInWithGoogle() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const isDevelopment = import.meta.env.DEV;
     const isLocal = supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1');
     
-    if (isLocal) {
-      // Mock Google Auth for local development
+    // Only allow mock authentication in development mode
+    if (isLocal && isDevelopment) {
+      // Mock Google Auth for local development only
       
       // Create a mock user that simulates Google sign-in
       const mockEmail = `google.user.${Date.now()}@gmail.com`;
@@ -131,8 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (signInError) throw signInError;
       } catch (error) {
-        console.error('Mock Google auth error:', error);
-        throw new Error('Mock Google authentication failed');
+        // Only log in development
+        if (isDevelopment) {
+          console.error('Mock Google auth error:', error);
+        }
+        throw new Error('Authentication failed');
       }
     } else {
       // Production Google OAuth
