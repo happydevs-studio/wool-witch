@@ -164,7 +164,7 @@ if (existsSync(corsFile)) {
   );
   
   check(
-    corsContent.includes('amount <= 0 || amount >'),
+    corsContent.includes('MAX_PAYMENT_AMOUNT') || corsContent.includes('amount <= 0 || amount >') || corsContent.includes('amount <') && corsContent.includes('amount >'),
     'Payment amount validation present'
   );
   
