@@ -143,9 +143,13 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       // Clean up the order if items failed
       await (supabase as any).from('orders').delete().eq('id', (order as any).id);
       
-      // Provide user-friendly error message without exposing internals
+      // Provide user-friendly error message based on error code
+      // Check for specific PostgreSQL error codes for better error handling
+      const errorCode = itemsError.code;
       const errorMsg = itemsError.message || '';
-      if (errorMsg.includes('foreign key constraint')) {
+      
+      if (errorCode === '23503' || errorMsg.includes('foreign key constraint')) {
+        // PostgreSQL error code 23503 = foreign_key_violation
         throw new Error('One or more products in your cart are no longer available. Please refresh the page and try again.');
       }
       throw new Error('Failed to process order items. Please try again.');

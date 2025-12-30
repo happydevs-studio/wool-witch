@@ -2,9 +2,10 @@
 -- Adds extra security constraints to ensure data integrity and prevent abuse
 
 -- Add email format validation constraint to orders table
+-- Using robust regex that prevents common email format issues
 ALTER TABLE woolwitch.orders 
 ADD CONSTRAINT orders_email_format_check 
-CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+CHECK (email ~* '^[A-Za-z0-9]([A-Za-z0-9._%-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$');
 
 -- Add length constraints to prevent abuse
 ALTER TABLE woolwitch.orders

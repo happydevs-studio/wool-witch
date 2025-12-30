@@ -1,6 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Payment amount limits
+const MAX_PAYMENT_AMOUNT = 100000000; // £1,000,000 in pence
+const MIN_PAYMENT_AMOUNT = 1; // £0.01 in pence
+
 // CORS headers - restrict to specific origins in production
 const getAllowedOrigins = (): string[] => {
   // Get allowed origins from environment variable
@@ -19,12 +23,16 @@ const getAllowedOrigins = (): string[] => {
   ];
 };
 
-const getCorsHeaders = (origin: string | null): Record<string, string> => {
+const getCorsHeaders = (origin: string | null): Record<string, string> | null => {
   const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  // Only allow requests from whitelisted origins
+  if (!origin || !allowedOrigins.includes(origin)) {
+    return null;
+  }
   
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
@@ -33,6 +41,17 @@ const getCorsHeaders = (origin: string | null): Record<string, string> => {
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin);
+  
+  // Reject requests from non-whitelisted origins
+  if (!corsHeaders) {
+    return new Response(
+      JSON.stringify({ error: 'Origin not allowed' }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -48,12 +67,12 @@ serve(async (req) => {
     }
 
     // Validate amount is positive and reasonable
-    if (amount <= 0 || amount > 100000000) { // Max £1,000,000
+    if (amount < MIN_PAYMENT_AMOUNT || amount > MAX_PAYMENT_AMOUNT) {
       throw new Error('Invalid payment amount');
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[A-Za-z0-9]([A-Za-z0-9._%-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/;
     if (!emailRegex.test(customer_email)) {
       throw new Error('Invalid email address');
     }
