@@ -143,6 +143,26 @@ Ensure these patterns are in `.gitignore`:
 *.log
 ```
 
+### Netlify Secrets Scanning
+
+Netlify automatically scans build output for exposed secrets. The `netlify.toml` configuration allows specific Supabase keys that are safe to expose:
+
+```toml
+[build.processing.secrets]
+  omit_keys = [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY"
+  ]
+```
+
+**Why this is secure:**
+- `VITE_SUPABASE_ANON_KEY` is the **anonymous/public key** designed for client-side JavaScript
+- This key is **protected by Row Level Security (RLS)** policies in the database
+- Supabase specifically documents this key as safe to expose publicly
+- See [Supabase API Keys Documentation](https://supabase.com/docs/guides/api#api-url-and-keys)
+
+**Important:** Never add `SUPABASE_SERVICE_ROLE_KEY` to `omit_keys` - this must remain secret!
+
 ## Sensitive Data Handling
 
 ### Console Logging

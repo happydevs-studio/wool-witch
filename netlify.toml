@@ -7,6 +7,25 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Install devDependencies (including vite) during build
+  # Required because vite is a build tool needed at build time
+  NPM_FLAGS = "--include=dev"
+
+# Security: Secrets Scanning Configuration
+# https://docs.netlify.com/security/secrets/secrets-scanning/
+[build.processing.secrets]
+  # Allow these environment variables to be present in build output
+  # These are Supabase public keys that are SAFE to expose:
+  # - VITE_SUPABASE_URL: Public URL for Supabase project
+  # - VITE_SUPABASE_ANON_KEY: Anonymous/public key designed for client-side use
+  # 
+  # These keys are protected by Supabase Row Level Security (RLS) policies
+  # and are intended to be publicly accessible. See:
+  # https://supabase.com/docs/guides/api#api-url-and-keys
+  omit_keys = [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY"
+  ]
 
 # Security Headers
 # These headers enhance security by preventing common web vulnerabilities
@@ -35,16 +54,16 @@
     # Note: 'unsafe-inline' and 'unsafe-eval' are required for:
     # - Vite's HMR and development tooling
     # - React's inline styles
-    # - Third-party integrations (Stripe, Google Analytics)
+    # - Third-party integrations (Stripe, Google Analytics, PayPal)
     # For enhanced security, consider using nonces in production builds
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com;
-      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.paypal.com https://www.paypalobjects.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.paypal.com;
+      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com https: blob:;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
-      frame-src https://js.stripe.com https://hooks.stripe.com;
+      frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
@@ -58,12 +77,14 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Redirects
-# Add any URL redirects here
-# [[redirects]]
-#   from = "/old-path"
-#   to = "/new-path"
-#   status = 301
+# Redirect rules for single-page application
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  # Don't apply redirect to files that exist
+  conditions = {path = "^(?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|xml|txt|html)$).*"}
 
 # Build context-specific settings
 [context.production]
