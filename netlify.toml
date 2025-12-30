@@ -1,16 +1,11 @@
-# Netlify Build Configuration
+# Netlify Configuration
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-  # Build command to generate production files
-  command = "npm run build"
-  
-  # Directory containing the production build files
   publish = "dist"
+  command = "npm run build"
 
-# Build environment configuration
 [build.environment]
-  # Node version for build process
   NODE_VERSION = "20"
 
 # Security: Secrets Scanning Configuration
@@ -29,21 +24,6 @@
     "VITE_SUPABASE_ANON_KEY"
   ]
 
-# Headers for enhanced security
-[[headers]]
-  for = "/*"
-  [headers.values]
-    # Prevent clickjacking attacks
-# Netlify Configuration
-# https://docs.netlify.com/configure-builds/file-based-configuration/
-
-[build]
-  publish = "dist"
-  command = "npm run build"
-
-[build.environment]
-  NODE_VERSION = "20"
-
 # Security Headers
 # These headers enhance security by preventing common web vulnerabilities
 [[headers]]
@@ -55,23 +35,12 @@
     # Prevent MIME type sniffing
     X-Content-Type-Options = "nosniff"
     
-    # Enable XSS protection
     # Enable XSS protection in older browsers
     X-XSS-Protection = "1; mode=block"
     
     # Control referrer information
     Referrer-Policy = "strict-origin-when-cross-origin"
     
-    # Content Security Policy
-    # Allows Supabase, Stripe, and PayPal integrations
-    Content-Security-Policy = """
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com;
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https: blob:;
-      font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co https://api.stripe.com https://www.paypal.com;
-      frame-src https://js.stripe.com https://www.paypal.com;
     # Restrict browser features
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
     
@@ -82,22 +51,28 @@
     # Note: 'unsafe-inline' and 'unsafe-eval' are required for:
     # - Vite's HMR and development tooling
     # - React's inline styles
-    # - Third-party integrations (Stripe, Google Analytics)
+    # - Third-party integrations (Stripe, Google Analytics, PayPal)
     # For enhanced security, consider using nonces in production builds
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com;
-      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.paypal.com https://www.paypalobjects.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.paypal.com;
+      img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com https: blob:;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
-      frame-src https://js.stripe.com https://hooks.stripe.com;
+      frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
       upgrade-insecure-requests;
     """
+
+# Cache static assets for better performance
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Redirect rules for single-page application
 [[redirects]]
@@ -107,18 +82,6 @@
   force = false
   # Don't apply redirect to files that exist
   conditions = {path = "^(?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|xml|txt|html)$).*"}
-# Cache static assets for better performance
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Redirects
-# Add any URL redirects here
-# [[redirects]]
-#   from = "/old-path"
-#   to = "/new-path"
-#   status = 301
 
 # Build context-specific settings
 [context.production]
