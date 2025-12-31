@@ -3,6 +3,7 @@ import { ShoppingBag, User, LogOut, UserCog, Menu, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
+import { NavLink, MobileNavLink } from './NavLink';
 import woolwitchLogo from '../assets/woolwitch.jpg';
 
 interface HeaderProps {
@@ -53,60 +54,25 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
           </button>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <button
-              onClick={() => handleNavigation('shop')}
-              className={`font-medium transition-colors ${
-                currentPage === 'shop'
-                  ? 'text-rose-600'
-                  : 'text-gray-700 hover:text-rose-600'
-              }`}
-            >
+            <NavLink isActive={currentPage === 'shop'} onClick={() => handleNavigation('shop')}>
               Shop
-            </button>
+            </NavLink>
             {isAdmin && (
-              <button
-                onClick={() => handleNavigation('admin')}
-                className={`font-medium transition-colors ${
-                  currentPage === 'admin'
-                    ? 'text-rose-600'
-                    : 'text-gray-700 hover:text-rose-600'
-                }`}
-              >
+              <NavLink isActive={currentPage === 'admin'} onClick={() => handleNavigation('admin')}>
                 Admin
-              </button>
+              </NavLink>
             )}
             {user && (
-              <button
-                onClick={() => handleNavigation('orders')}
-                className={`font-medium transition-colors ${
-                  currentPage === 'orders'
-                    ? 'text-rose-600'
-                    : 'text-gray-700 hover:text-rose-600'
-                }`}
-              >
+              <NavLink isActive={currentPage === 'orders'} onClick={() => handleNavigation('orders')}>
                 My Orders
-              </button>
+              </NavLink>
             )}
-            <button
-              onClick={() => handleNavigation('about')}
-              className={`font-medium transition-colors ${
-                currentPage === 'about'
-                  ? 'text-rose-600'
-                  : 'text-gray-700 hover:text-rose-600'
-              }`}
-            >
+            <NavLink isActive={currentPage === 'about'} onClick={() => handleNavigation('about')}>
               About
-            </button>
-            <button
-              onClick={() => handleNavigation('contact')}
-              className={`font-medium transition-colors ${
-                currentPage === 'contact'
-                  ? 'text-rose-600'
-                  : 'text-gray-700 hover:text-rose-600'
-              }`}
-            >
+            </NavLink>
+            <NavLink isActive={currentPage === 'contact'} onClick={() => handleNavigation('contact')}>
               Contact
-            </button>
+            </NavLink>
           </nav>
 
           <div className="flex items-center space-x-1 sm:space-x-3">
@@ -167,60 +133,25 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white">
           <nav className="px-4 py-4 space-y-3">
-            <button
-              onClick={() => handleNavigation('shop')}
-              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentPage === 'shop'
-                  ? 'bg-rose-50 text-rose-600'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
+            <MobileNavLink isActive={currentPage === 'shop'} onClick={() => handleNavigation('shop')}>
               Shop
-            </button>
+            </MobileNavLink>
             {isAdmin && (
-              <button
-                onClick={() => handleNavigation('admin')}
-                className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentPage === 'admin'
-                    ? 'bg-rose-50 text-rose-600'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
+              <MobileNavLink isActive={currentPage === 'admin'} onClick={() => handleNavigation('admin')}>
                 Admin
-              </button>
+              </MobileNavLink>
             )}
             {user && (
-              <button
-                onClick={() => handleNavigation('orders')}
-                className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentPage === 'orders'
-                    ? 'bg-rose-50 text-rose-600'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
+              <MobileNavLink isActive={currentPage === 'orders'} onClick={() => handleNavigation('orders')}>
                 My Orders
-              </button>
+              </MobileNavLink>
             )}
-            <button
-              onClick={() => handleNavigation('about')}
-              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentPage === 'about'
-                  ? 'bg-rose-50 text-rose-600'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
+            <MobileNavLink isActive={currentPage === 'about'} onClick={() => handleNavigation('about')}>
               About
-            </button>
-            <button
-              onClick={() => handleNavigation('contact')}
-              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentPage === 'contact'
-                  ? 'bg-rose-50 text-rose-600'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
+            </MobileNavLink>
+            <MobileNavLink isActive={currentPage === 'contact'} onClick={() => handleNavigation('contact')}>
               Contact
-            </button>
+            </MobileNavLink>
           </nav>
         </div>
       )}
