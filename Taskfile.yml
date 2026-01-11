@@ -200,6 +200,13 @@ tasks:
     cmds:
       - npm run test:smoke:prod
 
+  test:api-layer:
+    desc: Test woolwitch_api schema functions and views
+    deps: [install]
+    cmds:
+      - echo "Testing API layer..."
+      - node bin/test-api-layer.mjs
+
   build:
     desc: Build for production
     deps: [install]
