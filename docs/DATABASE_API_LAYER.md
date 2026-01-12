@@ -60,9 +60,10 @@ Contains only functions and views exposed to the UI:
 - `delete_product(product_id)` - Delete product (admin only)
 
 *Order Operations:*
-- `create_order(...)` - Create order with items
-- `create_payment(...)` - Record payment
-- `update_order_status(order_id, status)` - Update status (admin only)
+- `create_order(...)` - Create order with items (validates prices against product table)
+- `create_payment(...)` - Record payment (validates amount, restricts status to 'pending')
+- `update_payment_status(payment_id, status, details)` - Update payment status (admin/service only)
+- `update_order_status(order_id, status)` - Update order status (admin only)
 - `get_user_orders(limit)` - Fetch user's orders
 - `get_all_orders(filters...)` - Fetch all orders (admin only)
 - `get_order_by_id(order_id)` - Fetch specific order
@@ -109,7 +110,21 @@ const orderId = await createOrder({
 
 // Update order status (admin only)
 await updateOrderStatus(orderId, 'shipped');
+
+// Update payment status (admin/service only - typically from webhooks)
+await updatePaymentStatus(paymentId, 'completed', {
+  transaction_id: 'txn_123',
+  timestamp: new Date().toISOString()
+});
 ```
+
+**Payment Workflow:**
+1. Client calls `createOrder()` with product IDs and quantities
+2. Server validates prices against product table
+3. Client calls `createPayment()` with order ID (status: 'pending')
+4. Payment provider processes payment (Stripe/PayPal)
+5. Webhook handler calls `updatePaymentStatus()` to mark as 'completed'
+6. Order status automatically updates to 'paid'
 
 ### Direct View Access (Advanced)
 
@@ -132,6 +147,9 @@ const { data } = await supabase
 - All operations go through controlled API functions
 - Row Level Security (RLS) is still applied
 - Admin-only operations are enforced in functions
+- **Price validation**: Order creation validates all prices against the product table server-side
+- **Payment security**: Payment status restricted to 'pending' from client; updates require admin/service role
+- **Amount validation**: Payment amounts validated against order totals
 
 ### 2. Abstraction
 - UI doesn't need to know about table structure

@@ -7,7 +7,7 @@
  */
 
 import { supabase } from './supabase';
-import type { Product, Order } from '../types/database';
+import type { Product, Order, OrderItem } from '../types/database';
 
 // ========================================
 // PRODUCT API
@@ -232,6 +232,23 @@ export async function updateOrderStatus(
   }
 }
 
+export async function updatePaymentStatus(
+  paymentId: string,
+  status: 'pending' | 'completed' | 'failed' | 'refunded',
+  paymentDetails?: any
+): Promise<void> {
+  const { error } = await supabase.rpc('update_payment_status', {
+    p_payment_id: paymentId,
+    p_status: status,
+    p_payment_details: paymentDetails || null
+  });
+
+  if (error) {
+    console.error('Error updating payment status:', error);
+    throw error;
+  }
+}
+
 export async function getUserOrders(limit: number = 50): Promise<Order[]> {
   const { data, error } = await supabase.rpc('get_user_orders', {
     p_limit: limit
@@ -281,7 +298,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return data && data.length > 0 ? (data[0] as Order) : null;
 }
 
-export async function getOrderItems(orderId: string): Promise<any[]> {
+export async function getOrderItems(orderId: string): Promise<OrderItem[]> {
   const { data, error } = await supabase.rpc('get_order_items', {
     p_order_id: orderId
   });
@@ -291,7 +308,7 @@ export async function getOrderItems(orderId: string): Promise<any[]> {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as OrderItem[];
 }
 
 // ========================================
