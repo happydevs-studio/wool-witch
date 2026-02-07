@@ -120,6 +120,16 @@ export async function updateProduct(
   if (error) handleApiError(error, 'updating product');
 }
 
+export async function updateProductSortOrders(
+  productOrders: Array<{ id: string; sort_order: number }>
+): Promise<void> {
+  const { error } = await supabase.rpc('update_product_sort_orders', {
+    p_product_orders: productOrders
+  });
+
+  if (error) handleApiError(error, 'updating product sort orders');
+}
+
 export async function deleteProduct(productId: string): Promise<void> {
   const { error } = await supabase.rpc('delete_product', {
     p_product_id: productId
