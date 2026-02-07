@@ -166,7 +166,10 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold text-gray-900">
-                £{product.price.toFixed(2)}
+                {product.price_max && product.price_max > product.price
+                  ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+                  : `£${product.price.toFixed(2)}`
+                }
               </span>
               {product.delivery_charge != null && product.delivery_charge > 0 && (
                 <span className="text-lg text-gray-600">
