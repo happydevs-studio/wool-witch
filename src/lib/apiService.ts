@@ -79,6 +79,7 @@ export interface CreateProductData {
   stock_quantity?: number;
   delivery_charge?: number;
   is_available?: boolean;
+  price_max?: number;
 }
 
 export async function createProduct(productData: CreateProductData): Promise<string> {
@@ -90,7 +91,8 @@ export async function createProduct(productData: CreateProductData): Promise<str
     p_category: productData.category,
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
-    p_is_available: productData.is_available ?? true
+    p_is_available: productData.is_available ?? true,
+    p_price_max: productData.price_max ?? null
   });
 
   if (error) handleApiError(error, 'creating product');
@@ -111,7 +113,8 @@ export async function updateProduct(
     p_category: productData.category,
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
-    p_is_available: productData.is_available ?? true
+    p_is_available: productData.is_available ?? true,
+    p_price_max: productData.price_max ?? null
   });
 
   if (error) handleApiError(error, 'updating product');

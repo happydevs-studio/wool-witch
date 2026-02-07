@@ -12,6 +12,7 @@ interface ProductFormData {
   name: string;
   description: string;
   price: string;
+  price_max: string;
   image_url: string;
   category: string;
   stock_quantity: string;
@@ -37,6 +38,7 @@ export function Admin() {
     name: '',
     description: '',
     price: '',
+    price_max: '',
     image_url: '',
     category: '',
     stock_quantity: '0',
@@ -111,6 +113,7 @@ export function Admin() {
       name: product.name,
       description: product.description,
       price: product.price.toString(),
+      price_max: product.price_max?.toString() ?? '',
       image_url: product.image_url,
       category: product.category,
       stock_quantity: (product.stock_quantity ?? 0).toString(),
@@ -130,6 +133,7 @@ export function Admin() {
       name: '',
       description: '',
       price: '',
+      price_max: '',
       image_url: '',
       category: '',
       stock_quantity: '0',
@@ -257,9 +261,18 @@ export function Admin() {
       const price = parseFloat(formData.price);
       const stockQuantity = parseInt(formData.stock_quantity);
       const deliveryCharge = parseFloat(formData.delivery_charge);
+      const priceMax = formData.price_max.trim() ? parseFloat(formData.price_max) : undefined;
 
       if (isNaN(price) || price < 0) {
         alert('Please enter a valid price (must be 0 or greater)');
+        return;
+      }
+      if (priceMax !== undefined && (isNaN(priceMax) || priceMax < 0)) {
+        alert('Please enter a valid maximum price (must be 0 or greater)');
+        return;
+      }
+      if (priceMax !== undefined && priceMax < price) {
+        alert('Maximum price must be greater than or equal to the minimum price');
         return;
       }
       if (isNaN(stockQuantity) || stockQuantity < 0) {
@@ -280,6 +293,7 @@ export function Admin() {
         stock_quantity: stockQuantity,
         delivery_charge: deliveryCharge,
         is_available: formData.is_available,
+        price_max: priceMax,
       };
 
       if (editingId) {
@@ -428,6 +442,17 @@ export function Admin() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (£) <span className="text-gray-500 text-xs">(optional)</span></label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.price_max}
+                    onChange={(e) => setFormData({ ...formData, price_max: e.target.value })}
+                    placeholder="For price ranges"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
                   <input
                     type="number"
@@ -436,16 +461,17 @@ export function Admin() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Delivery (£)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.delivery_charge}
-                    onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  />
-                </div>
+              </div>
+              
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery (£)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.delivery_charge}
+                  onChange={(e) => setFormData({ ...formData, delivery_charge: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
               </div>
               
               <div className="sm:col-span-2">
@@ -563,7 +589,12 @@ export function Admin() {
                         <div className="min-w-0 flex-grow">
                           <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
                           <p className="text-xs text-gray-500 mb-1">{product.category}</p>
-                          <p className="text-sm font-semibold text-gray-900">£{product.price.toFixed(2)}</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {product.price_max && product.price_max > product.price
+                              ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+                              : `£${product.price.toFixed(2)}`
+                            }
+                          </p>
                         </div>
                         <div className="flex space-x-2 ml-2">
                           <button
@@ -647,7 +678,10 @@ export function Admin() {
                         {product.category}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        £{product.price.toFixed(2)}
+                        {product.price_max && product.price_max > product.price
+                          ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+                          : `£${product.price.toFixed(2)}`
+                        }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {product.stock_quantity}

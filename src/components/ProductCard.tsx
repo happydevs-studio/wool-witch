@@ -57,7 +57,10 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-2xl font-bold text-gray-900">
-              £{product.price.toFixed(2)}
+              {product.price_max && product.price_max > product.price 
+                ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+                : `£${product.price.toFixed(2)}`
+              }
             </span>
             {product.delivery_charge != null && product.delivery_charge > 0 && (
               <p className="text-xs text-gray-500">
