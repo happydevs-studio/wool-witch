@@ -1,4 +1,4 @@
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { OptimizedImage } from './OptimizedImage';
@@ -6,9 +6,10 @@ import type { Product } from '../types/database';
 
 interface ProductCardProps {
   product: Product;
+  onViewDetails?: (productId: string) => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onViewDetails }: ProductCardProps) {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
 
@@ -54,7 +55,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.description}
         </p>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <span className="text-2xl font-bold text-gray-900">
               £{product.price.toFixed(2)}
@@ -65,11 +66,22 @@ export function ProductCard({ product }: ProductCardProps) {
               </p>
             )}
           </div>
+        </div>
 
+        <div className="flex items-center gap-2">
+          {onViewDetails && (
+            <button
+              onClick={() => onViewDetails(product.id)}
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 border-2 border-rose-600 text-rose-600 rounded-lg transition-all font-medium hover:bg-rose-50"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Details</span>
+            </button>
+          )}
           <button
             onClick={handleAddToCart}
             disabled={product.stock_quantity != null && product.stock_quantity === 0}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all font-medium ${
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-all font-medium ${
               isAdded
                 ? 'bg-green-600 hover:bg-green-700 text-white'
                 : 'bg-rose-600 hover:bg-rose-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white'

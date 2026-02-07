@@ -10,18 +10,36 @@ import { Contact } from './pages/Contact';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import Orders from './pages/Orders';
+import { ProductDetails } from './pages/ProductDetails';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders'>('shop');
+  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details'>('shop');
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const renderPage = () => {
     const handleNavigation = (page: 'shop' | 'cart' | 'checkout') => {
       setCurrentPage(page);
     };
 
+    const handleProductView = (productId: string) => {
+      setSelectedProductId(productId);
+      setCurrentPage('product-details');
+    };
+
+    const handleBackToShop = () => {
+      setCurrentPage('shop');
+      setSelectedProductId(null);
+    };
+
     switch (currentPage) {
       case 'shop':
-        return <Shop />;
+        return <Shop onViewProduct={handleProductView} />;
+      case 'product-details':
+        return selectedProductId ? (
+          <ProductDetails productId={selectedProductId} onBack={handleBackToShop} />
+        ) : (
+          <Shop onViewProduct={handleProductView} />
+        );
       case 'cart':
         return <Cart onNavigate={handleNavigation} />;
       case 'checkout':
@@ -39,7 +57,7 @@ function App() {
       case 'terms-of-service':
         return <TermsOfService onNavigate={setCurrentPage} />;
       default:
-        return <Shop />;
+        return <Shop onViewProduct={handleProductView} />;
     }
   };
 
