@@ -11,6 +11,7 @@ interface ProductListFields {
   stock_quantity: number | null;
   delivery_charge: number | null;
   is_available: boolean | null;
+  sort_order?: number;
 }
 
 interface ProductSummaryFields {
@@ -118,8 +119,9 @@ export class DataService {
     try {
       let query = supabase
         .from('products_view')
-        .select('id, name, price, image_url, category, stock_quantity, delivery_charge, is_available')
+        .select('id, name, price, image_url, category, stock_quantity, delivery_charge, is_available, sort_order')
         .eq('is_available', true)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
