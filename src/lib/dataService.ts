@@ -11,7 +11,7 @@ interface ProductListFields {
   stock_quantity: number | null;
   delivery_charge: number | null;
   is_available: boolean | null;
-  sort_order?: number;
+  sort_order: number;
 }
 
 interface ProductSummaryFields {
