@@ -6,7 +6,7 @@ import { AuthModal } from './AuthModal';
 import woolwitchLogo from '../assets/woolwitch.jpg';
 
 interface HeaderProps {
-  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders';
+  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details';
   onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => void;
 }
 
@@ -56,7 +56,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             <button
               onClick={() => handleNavigation('shop')}
               className={`font-medium transition-colors ${
-                currentPage === 'shop'
+                currentPage === 'shop' || currentPage === 'product-details'
                   ? 'text-rose-600'
                   : 'text-gray-700 hover:text-rose-600'
               }`}
@@ -170,7 +170,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             <button
               onClick={() => handleNavigation('shop')}
               className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentPage === 'shop'
+                currentPage === 'shop' || currentPage === 'product-details'
                   ? 'bg-rose-50 text-rose-600'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}

@@ -1,12 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart, GripVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
-import { getProducts, createProduct, updateProduct, deleteProduct, CreateProductData } from '../lib/apiService';
+import { getProducts, createProduct, updateProduct, deleteProduct, updateProductSortOrders, CreateProductData } from '../lib/apiService';
 import type { Product, Order } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
 import { compressImage, formatFileSize } from '../lib/imageCompression';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ProductFormData {
   name: string;
@@ -18,6 +35,98 @@ interface ProductFormData {
   stock_quantity: string;
   delivery_charge: string;
   is_available: boolean;
+}
+
+interface SortableProductRowProps {
+  product: Product;
+  onEdit: (product: Product) => void;
+  onDelete: (id: string) => void;
+  isReordering: boolean;
+}
+
+function SortableProductRow({ product, onEdit, onDelete, isReordering }: SortableProductRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className={isDragging ? 'z-50' : ''}>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          {isReordering && (
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mr-3">
+              <GripVertical className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="w-12 h-12 rounded-lg object-cover mr-3"
+          />
+          <div>
+            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+            <div className="text-sm text-gray-500 truncate max-w-xs">
+              {product.description}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {product.category}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {product.price_max && product.price_max > product.price
+          ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+          : `£${product.price.toFixed(2)}`
+        }
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {product.stock_quantity}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            product.is_available
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}
+        >
+          {product.is_available ? 'Available' : 'Unavailable'}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        {!isReordering && (
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => onEdit(product)}
+              className="text-rose-600 hover:text-rose-900 p-1"
+              aria-label="Edit product"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => onDelete(product.id)}
+              className="text-red-600 hover:text-red-900 p-1"
+              aria-label="Delete product"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
 }
 
 export function Admin() {
@@ -34,6 +143,7 @@ export function Admin() {
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -45,6 +155,14 @@ export function Admin() {
     delivery_charge: '0',
     is_available: true,
   });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (isAdmin) {
@@ -91,6 +209,42 @@ export function Admin() {
       setOrderStats(stats);
     } catch {
       console.error('Error loading order statistics');
+    }
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = products.findIndex((p) => p.id === active.id);
+      const newIndex = products.findIndex((p) => p.id === over.id);
+
+      const newProducts = arrayMove(products, oldIndex, newIndex);
+      setProducts(newProducts);
+
+      // Update sort orders in the database
+      try {
+        const updates = newProducts.map((product, index) => ({
+          id: product.id,
+          sort_order: index + 1
+        }));
+        await updateProductSortOrders(updates);
+        
+        // Clear cache since we updated product order
+        dataService.clearCache();
+      } catch (error) {
+        console.error('Failed to update product order:', error);
+        // Revert on error
+        fetchAllProducts();
+      }
+    }
+  }
+
+  function toggleReorderMode() {
+    setIsReordering(!isReordering);
+    if (isReordering) {
+      // Exiting reorder mode - refresh to ensure we have latest data
+      fetchAllProducts();
     }
   }
 
@@ -378,6 +532,21 @@ export function Admin() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Product Management</h1>
               
+              {/* Reorder Mode Toggle */}
+              {!isAdding && !editingId && (
+                <button
+                  onClick={toggleReorderMode}
+                  className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    isReordering
+                      ? 'bg-rose-600 text-white hover:bg-rose-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <GripVertical className="w-5 h-5" />
+                  <span>{isReordering ? 'Done Reordering' : 'Reorder Products'}</span>
+                </button>
+              )}
+              
               {/* Mobile: Show action buttons prominently when editing */}
               {(isAdding || editingId) && (
                 <div className="flex space-x-3 sm:hidden">
@@ -632,94 +801,54 @@ export function Admin() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block bg-white rounded-lg shadow-md overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
-                    <tr key={product.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="w-12 h-12 rounded-lg object-cover mr-3"
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {product.description}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.category}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {product.price_max && product.price_max > product.price
-                          ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
-                          : `£${product.price.toFixed(2)}`
-                        }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.stock_quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            product.is_available
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {product.is_available ? 'Available' : 'Unavailable'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="text-rose-600 hover:text-rose-900 p-1"
-                            aria-label="Edit product"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className="text-red-600 hover:text-red-900 p-1"
-                            aria-label="Delete product"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="hidden sm:block bg-white rounded-lg shadow-md overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Stock
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <SortableContext
+                    items={products.map((p) => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {products.map((product) => (
+                        <SortableProductRow
+                          key={product.id}
+                          product={product}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          isReordering={isReordering}
+                        />
+                      ))}
+                    </tbody>
+                  </SortableContext>
+                </table>
+              </div>
+            </DndContext>
           </>
         )}
         </div>

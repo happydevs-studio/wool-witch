@@ -4,7 +4,11 @@ import { dataService } from '../lib/dataService';
 import type { Product } from '../types/database';
 import { Sparkles, Search, X } from 'lucide-react';
 
-export function Shop() {
+interface ShopProps {
+  onViewProduct: (productId: string) => void;
+}
+
+export function Shop({ onViewProduct }: ShopProps) {
   // Use Product interface from database types, but in practice we'll get optimized subset
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +174,7 @@ export function Shop() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} onViewDetails={onViewProduct} />
             ))}
           </div>
         )}
