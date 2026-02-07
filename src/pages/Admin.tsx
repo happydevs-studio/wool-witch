@@ -58,6 +58,7 @@ function SortableProductRow({ product, onEdit, onDelete, isReordering }: Sortabl
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    touchAction: 'none',
   };
 
   return (
@@ -147,6 +148,7 @@ function SortableProductCard({ product, onEdit, onDelete, isReordering }: Sortab
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    touchAction: 'none',
   };
 
   return (
