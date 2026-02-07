@@ -79,6 +79,7 @@ export interface CreateProductData {
   stock_quantity?: number;
   delivery_charge?: number;
   is_available?: boolean;
+  sort_order?: number;
 }
 
 export async function createProduct(productData: CreateProductData): Promise<string> {
@@ -90,7 +91,8 @@ export async function createProduct(productData: CreateProductData): Promise<str
     p_category: productData.category,
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
-    p_is_available: productData.is_available ?? true
+    p_is_available: productData.is_available ?? true,
+    p_sort_order: productData.sort_order ?? null
   });
 
   if (error) handleApiError(error, 'creating product');
@@ -111,7 +113,8 @@ export async function updateProduct(
     p_category: productData.category,
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
-    p_is_available: productData.is_available ?? true
+    p_is_available: productData.is_available ?? true,
+    p_sort_order: productData.sort_order ?? null
   });
 
   if (error) handleApiError(error, 'updating product');
@@ -123,6 +126,16 @@ export async function deleteProduct(productId: string): Promise<void> {
   });
 
   if (error) handleApiError(error, 'deleting product');
+}
+
+export async function updateProductSortOrders(
+  productOrders: Array<{ id: string; sort_order: number }>
+): Promise<void> {
+  const { error } = await supabase.rpc('update_product_sort_orders', {
+    p_product_orders: productOrders
+  });
+
+  if (error) handleApiError(error, 'updating product sort orders');
 }
 
 // ========================================
