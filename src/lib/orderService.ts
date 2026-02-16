@@ -4,7 +4,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { 
+import {
   createOrder as apiCreateOrder,
   createPayment as apiCreatePayment,
   updateOrderStatus as apiUpdateOrderStatus,
@@ -25,6 +25,17 @@ import type {
   PayPalDetails,
   StripeDetails
 } from '../types/database';
+
+const isDevRuntime = (): boolean => {
+  const viteEnv = (import.meta as any).env ?? {};
+  if (typeof viteEnv.DEV !== 'undefined') {
+    return Boolean(viteEnv.DEV);
+  }
+  if (typeof process !== 'undefined') {
+    return process.env.NODE_ENV !== 'production';
+  }
+  return false;
+};
 
 // ========================================
 // ORDER CALCULATION UTILITIES
@@ -90,7 +101,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   
   if (!validation.valid) {
     // Log validation errors in development only
-    if (import.meta.env.DEV) {
+    if (isDevRuntime()) {
       console.error('Invalid cart items detected:', validation.errors);
     }
     
@@ -150,7 +161,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
 
   } catch (error) {
     // Log error details only in development
-    if (import.meta.env.DEV) {
+    if (isDevRuntime()) {
       console.error('Error creating order:', error);
     }
     throw error;
@@ -166,7 +177,7 @@ export async function getOrderItems(orderId: string): Promise<any[]> {
     return items || [];
   } catch (error) {
     // Log error details only in development
-    if (import.meta.env.DEV) {
+    if (isDevRuntime()) {
       console.error('Error in getOrderItems:', error);
     }
     throw error;

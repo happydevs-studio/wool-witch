@@ -69,6 +69,21 @@ tasks:
       - echo "Starting dev server..."
       - npm run dev
 
+  # === MCP SERVER ===
+  mcp:dev:
+    desc: Run MCP server (uses repo .env.local)
+    cmds:
+      - echo "Starting MCP server..."
+      - cd mcp && npm install
+      - cd mcp && npm run dev
+
+  mcp:start:
+    desc: Run MCP server (production-style)
+    cmds:
+      - echo "Starting MCP server..."
+      - cd mcp && npm install
+      - cd mcp && npm run start
+
   # === DATABASE ===
 
   # === DATABASE ===
