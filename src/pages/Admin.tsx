@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart, GripVertical } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
 import { getProducts, createProduct, updateProduct, deleteProduct, updateProductSortOrders, CreateProductData } from '../lib/apiService';
@@ -55,14 +55,18 @@ function SortableProductRow({ product, onEdit, onDelete, isReordering }: Sortabl
   } = useSortable({ id: product.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transform: isDragging 
+      ? `${CSS.Transform.toString(transform)} scale(1.02)` 
+      : CSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : transition,
+    opacity: isDragging ? 0.8 : 1,
+    boxShadow: isDragging ? '0 15px 40px rgba(0, 0, 0, 0.4)' : 'none',
     touchAction: 'none',
+    zIndex: isDragging ? 50 : 'auto',
   };
 
   return (
-    <tr ref={setNodeRef} style={style} className={isDragging ? 'z-50' : ''}>
+    <tr ref={setNodeRef} style={style}>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           {isReordering && (
@@ -132,9 +136,13 @@ interface SortableProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
   isReordering: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-function SortableProductCard({ product, onEdit, onDelete, isReordering }: SortableProductCardProps) {
+function SortableProductCard({ product, onEdit, onDelete, isReordering, onMoveUp, onMoveDown, isFirst, isLast }: SortableProductCardProps) {
   const {
     attributes,
     listeners,
@@ -145,22 +153,48 @@ function SortableProductCard({ product, onEdit, onDelete, isReordering }: Sortab
   } = useSortable({ id: product.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transform: isDragging 
+      ? `${CSS.Transform.toString(transform)} scale(1.02)` 
+      : CSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : transition,
+    opacity: isDragging ? 0.8 : 1,
+    boxShadow: isDragging ? '0 15px 40px rgba(0, 0, 0, 0.4)' : 'none',
     touchAction: 'none',
+    zIndex: isDragging ? 50 : 'auto',
   };
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`bg-white rounded-lg shadow-md p-4 ${isDragging ? 'z-50' : ''}`}
+      className='bg-white rounded-lg shadow-md p-4'
     >
       <div className="flex items-start space-x-3">
         {isReordering && (
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex-shrink-0 pt-1">
-            <GripVertical className="w-6 h-6 text-gray-400" />
+          <div className="flex-shrink-0 pt-1">
+            {/* Desktop: grip handle for dragging */}
+            <div {...attributes} {...listeners} className="hidden sm:block cursor-grab active:cursor-grabbing">
+              <GripVertical className="w-6 h-6 text-gray-400" />
+            </div>
+            {/* Mobile: up/down buttons */}
+            <div className="block sm:hidden flex flex-col space-y-1">
+              <button
+                onClick={onMoveUp}
+                disabled={isFirst}
+                className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors"
+                aria-label="Move up"
+              >
+                <ChevronUp className="w-5 h-5" />
+              </button>
+              <button
+                onClick={onMoveDown}
+                disabled={isLast}
+                className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed rounded transition-colors"
+                aria-label="Move down"
+              >
+                <ChevronDown className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
         <img
@@ -327,6 +361,48 @@ export function Admin() {
       } catch (error) {
         console.error('Failed to update product order:', error);
         // Revert on error
+        fetchAllProducts();
+      }
+    }
+  }
+
+  async function handleMoveUp(productId: string) {
+    const index = products.findIndex((p) => p.id === productId);
+    if (index > 0) {
+      const newProducts = [...products];
+      [newProducts[index - 1], newProducts[index]] = [newProducts[index], newProducts[index - 1]];
+      setProducts(newProducts);
+
+      try {
+        const updates = newProducts.map((product, idx) => ({
+          id: product.id,
+          sort_order: idx + 1
+        }));
+        await updateProductSortOrders(updates);
+        dataService.clearCache();
+      } catch (error) {
+        console.error('Failed to update product order:', error);
+        fetchAllProducts();
+      }
+    }
+  }
+
+  async function handleMoveDown(productId: string) {
+    const index = products.findIndex((p) => p.id === productId);
+    if (index < products.length - 1) {
+      const newProducts = [...products];
+      [newProducts[index], newProducts[index + 1]] = [newProducts[index + 1], newProducts[index]];
+      setProducts(newProducts);
+
+      try {
+        const updates = newProducts.map((product, idx) => ({
+          id: product.id,
+          sort_order: idx + 1
+        }));
+        await updateProductSortOrders(updates);
+        dataService.clearCache();
+      } catch (error) {
+        console.error('Failed to update product order:', error);
         fetchAllProducts();
       }
     }
@@ -817,18 +893,22 @@ export function Admin() {
               onDragEnd={handleDragEnd}
             >
               {/* Mobile product cards */}
-              <div className="block sm:hidden space-y-4">
+              <div className="block sm:hidden space-y-4" style={{ touchAction: isReordering ? 'none' : 'auto' }}>
                 <SortableContext
                   items={products.map((p) => p.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  {products.map((product) => (
+                  {products.map((product, index) => (
                     <SortableProductCard
                       key={product.id}
                       product={product}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       isReordering={isReordering}
+                      onMoveUp={() => handleMoveUp(product.id)}
+                      onMoveDown={() => handleMoveDown(product.id)}
+                      isFirst={index === 0}
+                      isLast={index === products.length - 1}
                     />
                   ))}
                 </SortableContext>
