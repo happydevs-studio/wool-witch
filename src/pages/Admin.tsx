@@ -62,7 +62,7 @@ function SortableProductRow({ product, onEdit, onDelete, isReordering }: Sortabl
     transition: isDragging ? 'none' : transition,
     opacity: isDragging ? 0.8 : 1,
     boxShadow: isDragging ? '0 15px 40px rgba(0, 0, 0, 0.4)' : 'none',
-    touchAction: 'none',
+    touchAction: isReordering ? 'none' : 'auto',
     zIndex: isDragging ? 50 : 'auto',
   };
 
@@ -163,7 +163,7 @@ function SortableProductCard({ product, onEdit, onDelete, isReordering, onMoveUp
     transition: isDragging ? 'none' : transition,
     opacity: isDragging ? 0.8 : 1,
     boxShadow: isDragging ? '0 15px 40px rgba(0, 0, 0, 0.4)' : 'none',
-    touchAction: 'none',
+    touchAction: isReordering ? 'none' : 'auto',
     zIndex: isDragging ? 50 : 'auto',
   };
 
