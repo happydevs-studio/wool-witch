@@ -1,5 +1,16 @@
--- Add price_max support to API functions (after sort_order migration)
--- Migration: 20260207164540_woolwitch_add_price_max_to_sort_order_functions.sql
+-- Consolidated price range support after sort_order migrations
+-- Migration: 20260216193000_woolwitch_price_range_support.sql
+
+-- Add price_max column for optional price ranges
+ALTER TABLE woolwitch.products
+ADD COLUMN price_max numeric(10, 2) CHECK (price_max IS NULL OR price_max >= 0);
+
+-- Ensure price_max is greater than or equal to price when set
+ALTER TABLE woolwitch.products
+ADD CONSTRAINT price_range_valid CHECK (price_max IS NULL OR price_max >= price);
+
+-- Document price_max usage
+COMMENT ON COLUMN woolwitch.products.price_max IS 'Optional maximum price for products with price ranges (e.g., varying sizes/complexity)';
 
 -- Update get_products function to include price_max
 DROP FUNCTION IF EXISTS woolwitch_api.get_products(text, text, int, int) CASCADE;
@@ -22,14 +33,14 @@ RETURNS TABLE (
   is_available boolean,
   created_at timestamptz,
   sort_order integer
-) 
+)
 SECURITY DEFINER
 SET search_path = woolwitch, woolwitch_api, public
 LANGUAGE plpgsql
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     p.id,
     p.name,
     p.description,
@@ -43,10 +54,10 @@ BEGIN
     p.created_at,
     p.sort_order
   FROM woolwitch.products p
-  WHERE 
+  WHERE
     (p_category IS NULL OR p.category = p_category)
-    AND (p_search IS NULL OR 
-         p.name ILIKE '%' || p_search || '%' OR 
+    AND (p_search IS NULL OR
+         p.name ILIKE '%' || p_search || '%' OR
          p.description ILIKE '%' || p_search || '%' OR
          p.category ILIKE '%' || p_search || '%')
   ORDER BY p.sort_order ASC, p.created_at DESC
@@ -78,7 +89,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     p.id,
     p.name,
     p.description,
@@ -115,7 +126,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     p.id,
     p.name,
     p.description,
@@ -129,7 +140,7 @@ BEGIN
 END;
 $$;
 
--- Update create_product function to accept both sort_order and price_max
+-- Update create_product to accept both sort_order and price_max
 DROP FUNCTION IF EXISTS woolwitch_api.create_product(text, text, numeric, text, text, integer, numeric, boolean, integer) CASCADE;
 CREATE FUNCTION woolwitch_api.create_product(
   p_name text,
@@ -152,12 +163,10 @@ DECLARE
   v_product_id uuid;
   v_sort_order integer;
 BEGIN
-  -- Check if user is admin
   IF NOT woolwitch.is_admin() THEN
     RAISE EXCEPTION 'Only admins can create products';
   END IF;
 
-  -- If sort_order not provided, use max + 1
   IF p_sort_order IS NULL THEN
     SELECT COALESCE(MAX(sort_order), 0) + 1 INTO v_sort_order
     FROM woolwitch.products;
@@ -194,7 +203,7 @@ BEGIN
 END;
 $$;
 
--- Update update_product function to include both sort_order and price_max
+-- Update update_product to include both sort_order and price_max
 DROP FUNCTION IF EXISTS woolwitch_api.update_product(uuid, text, text, numeric, text, text, integer, numeric, boolean, integer) CASCADE;
 CREATE FUNCTION woolwitch_api.update_product(
   p_product_id uuid,
@@ -215,7 +224,6 @@ SET search_path = woolwitch, woolwitch_api, public
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Check if user is admin
   IF NOT woolwitch.is_admin() THEN
     RAISE EXCEPTION 'Only admins can update products';
   END IF;
@@ -233,24 +241,24 @@ BEGIN
     sort_order = COALESCE(p_sort_order, sort_order),
     price_max = p_price_max
   WHERE id = p_product_id;
-  
+
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Product not found';
   END IF;
 END;
 $$;
 
--- Add permissions
+-- Permissions
 GRANT EXECUTE ON FUNCTION woolwitch_api.get_products TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION woolwitch_api.get_product_by_id TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION woolwitch_api.get_products_by_ids TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION woolwitch_api.create_product TO authenticated;
 GRANT EXECUTE ON FUNCTION woolwitch_api.update_product TO authenticated;
 
--- Update products_view to include price_max
+-- Update products_view to include price_max and sort_order
 DROP VIEW IF EXISTS woolwitch_api.products_view CASCADE;
 CREATE VIEW woolwitch_api.products_view AS
-SELECT 
+SELECT
   id,
   name,
   description,
@@ -266,5 +274,6 @@ SELECT
 FROM woolwitch.products
 WHERE is_available = true OR woolwitch.is_admin();
 
--- Grant permissions on view
+COMMENT ON VIEW woolwitch_api.products_view IS 'Public view of available products with price range and sort order support';
+
 GRANT SELECT ON woolwitch_api.products_view TO authenticated, anon;
