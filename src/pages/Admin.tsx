@@ -12,6 +12,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -58,6 +59,7 @@ function SortableProductRow({ product, onEdit, onDelete, isReordering }: Sortabl
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    touchAction: 'none',
   };
 
   return (
@@ -129,6 +131,96 @@ function SortableProductRow({ product, onEdit, onDelete, isReordering }: Sortabl
   );
 }
 
+interface SortableProductCardProps {
+  product: Product;
+  onEdit: (product: Product) => void;
+  onDelete: (id: string) => void;
+  isReordering: boolean;
+}
+
+function SortableProductCard({ product, onEdit, onDelete, isReordering }: SortableProductCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    touchAction: 'none',
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`bg-white rounded-lg shadow-md p-4 ${isDragging ? 'z-50' : ''}`}
+    >
+      <div className="flex items-start space-x-3">
+        {isReordering && (
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing flex-shrink-0 pt-1">
+            <GripVertical className="w-6 h-6 text-gray-400" />
+          </div>
+        )}
+        <img
+          src={product.image_url}
+          alt={product.name}
+          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+        />
+        <div className="flex-grow min-w-0">
+          <div className="flex items-start justify-between">
+            <div className="min-w-0 flex-grow">
+              <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
+              <p className="text-xs text-gray-500 mb-1">{product.category}</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {product.price_max && product.price_max > product.price
+                  ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
+                  : `£${product.price.toFixed(2)}`
+                }
+              </p>
+            </div>
+            {!isReordering && (
+              <div className="flex space-x-2 ml-2">
+                <button
+                  onClick={() => onEdit(product)}
+                  className="p-2 text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors"
+                  aria-label="Edit product"
+                >
+                  <Edit2 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => onDelete(product.id)}
+                  className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors"
+                  aria-label="Delete product"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-gray-500">Stock: {product.stock_quantity}</span>
+            <span
+              className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                product.is_available
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {product.is_available ? 'Available' : 'Unavailable'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Admin() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
@@ -158,7 +250,17 @@ export function Admin() {
 
   // Drag and drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -743,69 +845,30 @@ export function Admin() {
           <div className="text-center py-12">Loading products...</div>
         ) : (
           <>
-            {/* Mobile product cards */}
-            <div className="block sm:hidden space-y-4">
-              {products.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-start space-x-3">
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-grow">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
-                          <p className="text-xs text-gray-500 mb-1">{product.category}</p>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {product.price_max && product.price_max > product.price
-                              ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
-                              : `£${product.price.toFixed(2)}`
-                            }
-                          </p>
-                        </div>
-                        <div className="flex space-x-2 ml-2">
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="p-2 text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors"
-                            aria-label="Edit product"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors"
-                            aria-label="Delete product"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-gray-500">Stock: {product.stock_quantity}</span>
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            product.is_available
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {product.is_available ? 'Available' : 'Unavailable'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop table */}
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >
+              {/* Mobile product cards */}
+              <div className="block sm:hidden space-y-4">
+                <SortableContext
+                  items={products.map((p) => p.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {products.map((product) => (
+                    <SortableProductCard
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      isReordering={isReordering}
+                    />
+                  ))}
+                </SortableContext>
+              </div>
+
+              {/* Desktop table */}
               <div className="hidden sm:block bg-white rounded-lg shadow-md overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
