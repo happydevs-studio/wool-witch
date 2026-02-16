@@ -802,7 +802,7 @@ export type Database = {
           is_available: boolean | null
           name: string
           price: number
-          sort_order: number
+          price_max: number | null
           stock_quantity: number | null
         }
         Insert: {
@@ -815,7 +815,7 @@ export type Database = {
           is_available?: boolean | null
           name: string
           price: number
-          sort_order?: number
+          price_max?: number | null
           stock_quantity?: number | null
         }
         Update: {
@@ -828,7 +828,7 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           price?: number
-          sort_order?: number
+          price_max?: number | null
           stock_quantity?: number | null
         }
         Relationships: []
