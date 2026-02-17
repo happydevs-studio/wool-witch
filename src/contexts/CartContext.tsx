@@ -1,16 +1,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { validateCartProducts } from '../lib/cartDebug';
 import { calculateSubtotal, calculateDeliveryTotal, calculateTotal } from '../lib/orderService';
-import type { Product } from '../types/database';
+import type { Product, CustomPropertySelection } from '../types/database';
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  customSelections?: CustomPropertySelection[];
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity: number) => void;
+  addItem: (product: Product, quantity: number, customSelections?: CustomPropertySelection[]) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -85,17 +86,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isLoading]);
 
-  const addItem = (product: Product, quantity: number) => {
+  const addItem = (product: Product, quantity: number, customSelections?: CustomPropertySelection[]) => {
     setItems((prevItems) => {
-      const existing = prevItems.find((item) => item.product.id === product.id);
+      // For products with custom properties, we need to check if the same selections already exist
+      const existing = prevItems.find((item) => {
+        if (item.product.id !== product.id) return false;
+        
+        // If product has no custom properties, just match by product ID
+        if (!customSelections || customSelections.length === 0) {
+          return !item.customSelections || item.customSelections.length === 0;
+        }
+        
+        // Compare custom selections
+        if (!item.customSelections || item.customSelections.length !== customSelections.length) {
+          return false;
+        }
+        
+        // Check if all selections match
+        return customSelections.every(selection => 
+          item.customSelections?.some(
+            s => s.propertyId === selection.propertyId && s.value === selection.value
+          )
+        );
+      });
+      
       if (existing) {
         return prevItems.map((item) =>
-          item.product.id === product.id
+          item === existing
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prevItems, { product, quantity }];
+      
+      return [...prevItems, { product, quantity, customSelections }];
     });
   };
 
