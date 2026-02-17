@@ -8,7 +8,7 @@
 
 import { supabase } from './supabase';
 import { handleApiError } from './errorHandler';
-import type { Product, Order, OrderItem } from '../types/database';
+import type { Product, Order, OrderItem, CustomPropertiesConfig } from '../types/database';
 
 // ========================================
 // PRODUCT API
@@ -80,6 +80,7 @@ export interface CreateProductData {
   delivery_charge?: number;
   is_available?: boolean;
   price_max?: number;
+  custom_properties?: CustomPropertiesConfig | null;
 }
 
 export async function createProduct(productData: CreateProductData): Promise<string> {
@@ -92,7 +93,8 @@ export async function createProduct(productData: CreateProductData): Promise<str
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
     p_is_available: productData.is_available ?? true,
-    p_price_max: productData.price_max ?? null
+    p_price_max: productData.price_max ?? null,
+    p_custom_properties: productData.custom_properties ?? null
   });
 
   if (error) handleApiError(error, 'creating product');
@@ -114,7 +116,8 @@ export async function updateProduct(
     p_stock_quantity: productData.stock_quantity ?? 0,
     p_delivery_charge: productData.delivery_charge ?? 0,
     p_is_available: productData.is_available ?? true,
-    p_price_max: productData.price_max ?? null
+    p_price_max: productData.price_max ?? null,
+    p_custom_properties: productData.custom_properties ?? null
   });
 
   if (error) handleApiError(error, 'updating product');

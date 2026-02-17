@@ -795,6 +795,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string | null
+          custom_properties: Json | null
           delivery_charge: number | null
           description: string
           id: string
@@ -808,6 +809,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string | null
+          custom_properties?: Json | null
           delivery_charge?: number | null
           description: string
           id?: string
@@ -821,6 +823,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string | null
+          custom_properties?: Json | null
           delivery_charge?: number | null
           description?: string
           id?: string
@@ -1092,4 +1095,76 @@ export interface OrderSummary {
 
 // Product type export
 export type Product = Database['woolwitch']['Tables']['products']['Row'];
+
+// ========================================
+// CUSTOM PRODUCT PROPERTIES
+// ========================================
+
+// Types of custom properties supported
+export type CustomPropertyType = 'dropdown' | 'text' | 'textarea' | 'number';
+
+// Base custom property definition
+export interface CustomPropertyBase {
+  id: string;
+  label: string;
+  type: CustomPropertyType;
+  required: boolean;
+  description?: string;
+}
+
+// Dropdown property with predefined options
+export interface CustomPropertyDropdown extends CustomPropertyBase {
+  type: 'dropdown';
+  options: string[];
+  defaultValue?: string;
+}
+
+// Text input property
+export interface CustomPropertyText extends CustomPropertyBase {
+  type: 'text';
+  placeholder?: string;
+  maxLength?: number;
+  defaultValue?: string;
+}
+
+// Textarea property for longer text
+export interface CustomPropertyTextarea extends CustomPropertyBase {
+  type: 'textarea';
+  placeholder?: string;
+  maxLength?: number;
+  rows?: number;
+  defaultValue?: string;
+}
+
+// Number input property
+export interface CustomPropertyNumber extends CustomPropertyBase {
+  type: 'number';
+  min?: number;
+  max?: number;
+  step?: number;
+  defaultValue?: number;
+}
+
+// Union type for all custom property types
+export type CustomProperty = 
+  | CustomPropertyDropdown 
+  | CustomPropertyText 
+  | CustomPropertyTextarea 
+  | CustomPropertyNumber;
+
+// Custom properties structure stored in product
+export interface CustomPropertiesConfig {
+  properties: CustomProperty[];
+}
+
+// Customer's selected values for custom properties
+export interface CustomPropertySelection {
+  propertyId: string;
+  value: string | number;
+}
+
+// Product with typed custom properties
+export interface ProductWithCustomProperties extends Product {
+  custom_properties: CustomPropertiesConfig | null;
+}
 
