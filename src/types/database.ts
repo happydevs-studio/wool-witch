@@ -1164,7 +1164,7 @@ export interface CustomPropertySelection {
 }
 
 // Product with typed custom properties
-export interface ProductWithCustomProperties extends Product {
+export interface ProductWithCustomProperties extends Omit<Product, 'custom_properties'> {
   custom_properties: CustomPropertiesConfig | null;
 }
 
