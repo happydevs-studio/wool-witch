@@ -56,8 +56,8 @@ export function Cart({ onNavigate }: CartProps) {
             <h1 className="text-4xl font-serif font-bold text-gray-900 mb-8">Shopping Bag</h1>
 
             <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.product.id} className="bg-white rounded-xl shadow-md p-6">
+              {items.map((item, index) => (
+                <div key={`${item.product.id}-${index}`} className="bg-white rounded-xl shadow-md p-6">
                   <div className="grid grid-cols-4 gap-4 items-start">
                     <div className="col-span-1">
                       <img
@@ -72,6 +72,22 @@ export function Cart({ onNavigate }: CartProps) {
                         {item.product.name}
                       </h3>
                       <p className="text-sm text-gray-600 mb-3">{item.product.category}</p>
+                      
+                      {item.customSelections && item.customSelections.length > 0 && (
+                        <div className="mb-3 space-y-1">
+                          {item.customSelections.map((selection) => {
+                            const property = (item.product.custom_properties as any)?.properties?.find(
+                              (p: any) => p.id === selection.propertyId
+                            );
+                            return property ? (
+                              <p key={selection.propertyId} className="text-sm text-gray-600">
+                                <span className="font-medium">{property.label}:</span> {selection.value}
+                              </p>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                      
                       <p className="text-2xl font-bold text-gray-900">
                         £{item.product.price.toFixed(2)}
                       </p>
