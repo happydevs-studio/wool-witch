@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
+import { getProductById } from '../lib/apiService';
 
 interface Message {
   id: string;
@@ -7,6 +9,7 @@ interface Message {
   content: string;
   toolResults?: Array<{
     tool: string;
+    toolInput?: any;
     adaptiveCard?: any;
   }>;
 }
@@ -18,6 +21,7 @@ export function Chat() {
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mcpServerUrl = import.meta.env.VITE_MCP_SERVER_URL || 'http://localhost:3333';
+  const { addItem, updateQuantity, removeItem, clearCart } = useCart();
 
   useEffect(() => {
     // Add welcome message
@@ -70,6 +74,14 @@ export function Chat() {
         setConversationHistory(data.conversationHistory);
       }
 
+      if (Array.isArray(data.toolResults) && data.toolResults.length > 0) {
+        const normalizedToolResults = normalizeToolResults(
+          data.toolResults,
+          data.conversationHistory || conversationHistory
+        );
+        await syncCartFromTools(normalizedToolResults);
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -88,6 +100,72 @@ export function Chat() {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const normalizeToolResults = (
+    toolResults: Message['toolResults'],
+    history: any[]
+  ): Message['toolResults'] => {
+    if (!toolResults) return toolResults;
+
+    const toolUses: Array<{ name: string; input: any }> = [];
+
+    for (const entry of history || []) {
+      if (entry?.role !== 'assistant' || !Array.isArray(entry?.content)) continue;
+      for (const block of entry.content) {
+        if (block?.type === 'tool_use' && block?.name) {
+          toolUses.push({ name: block.name, input: block.input });
+        }
+      }
+    }
+
+    const recentToolUses = toolUses.slice(-toolResults.length);
+
+    return toolResults.map((result, index) => {
+      if (result?.toolInput) return result;
+      const fallbackInput = recentToolUses[index]?.input;
+      return {
+        ...result,
+        toolInput: fallbackInput
+      };
+    });
+  };
+
+  const syncCartFromTools = async (toolResults: Message['toolResults']) => {
+    if (!toolResults) return;
+
+    for (const result of toolResults) {
+      const toolName = result?.tool;
+      const input = result?.toolInput || {};
+
+      if (toolName === 'add_to_cart') {
+        const productId = typeof input.product_id === 'string' ? input.product_id : '';
+        const quantity = Number(input.quantity ?? 0);
+
+        if (!productId || quantity <= 0) continue;
+
+        try {
+          const product = await getProductById(productId);
+          if (product) {
+            addItem(product, quantity);
+          }
+        } catch (error) {
+          console.warn('Failed to sync add_to_cart from MCP:', error);
+        }
+      } else if (toolName === 'update_cart_quantity') {
+        const productId = typeof input.product_id === 'string' ? input.product_id : '';
+        const quantity = Number(input.quantity ?? 0);
+
+        if (!productId || quantity < 0) continue;
+        updateQuantity(productId, quantity);
+      } else if (toolName === 'remove_from_cart') {
+        const productId = typeof input.product_id === 'string' ? input.product_id : '';
+        if (!productId) continue;
+        removeItem(productId);
+      } else if (toolName === 'clear_cart') {
+        clearCart();
+      }
     }
   };
 

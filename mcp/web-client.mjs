@@ -157,6 +157,7 @@ TECHNICAL NOTES:
 
       toolResults.push({
         tool: toolUse.name,
+        toolInput: toolUse.input,
         adaptiveCard
       });
 
