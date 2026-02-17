@@ -1,5 +1,11 @@
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import type { CustomProperty, CustomPropertyType, CustomPropertiesConfig } from '../types/database';
+import type { 
+  CustomProperty, 
+  CustomPropertyType, 
+  CustomPropertiesConfig,
+  CustomPropertyText,
+  CustomPropertyNumber
+} from '../types/database';
 
 interface CustomPropertiesEditorProps {
   value: CustomPropertiesConfig | null;
@@ -194,7 +200,7 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
                   <div>
                     <input
                       type="text"
-                      value={(property as any).placeholder || ''}
+                      value={(property as CustomPropertyText).placeholder || ''}
                       onChange={(e) => updateProperty(index, { placeholder: e.target.value })}
                       placeholder="Placeholder text (optional)"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -206,21 +212,21 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
                   <div className="grid grid-cols-3 gap-2">
                     <input
                       type="number"
-                      value={(property as any).min || ''}
+                      value={(property as CustomPropertyNumber).min || ''}
                       onChange={(e) => updateProperty(index, { min: e.target.value ? parseFloat(e.target.value) : undefined })}
                       placeholder="Min (optional)"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
                     />
                     <input
                       type="number"
-                      value={(property as any).max || ''}
+                      value={(property as CustomPropertyNumber).max || ''}
                       onChange={(e) => updateProperty(index, { max: e.target.value ? parseFloat(e.target.value) : undefined })}
                       placeholder="Max (optional)"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
                     />
                     <input
                       type="number"
-                      value={(property as any).step || ''}
+                      value={(property as CustomPropertyNumber).step || ''}
                       onChange={(e) => updateProperty(index, { step: e.target.value ? parseFloat(e.target.value) : undefined })}
                       placeholder="Step (optional)"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
