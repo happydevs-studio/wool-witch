@@ -3,10 +3,11 @@ import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart, GripVertic
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
 import { getProducts, createProduct, updateProduct, deleteProduct, updateProductSortOrders, CreateProductData } from '../lib/apiService';
-import type { Product, Order } from '../types/database';
+import type { Product, Order, CustomPropertiesConfig } from '../types/database';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllOrders, updateOrderStatus, getOrderStatistics, formatOrderStatus, getOrderStatusColor } from '../lib/orderService';
 import { compressImage, formatFileSize } from '../lib/imageCompression';
+import { CustomPropertiesEditor } from '../components/CustomPropertiesEditor';
 import {
   DndContext,
   closestCenter,
@@ -36,6 +37,7 @@ interface ProductFormData {
   stock_quantity: string;
   delivery_charge: string;
   is_available: boolean;
+  custom_properties: CustomPropertiesConfig | null;
 }
 
 interface SortableProductRowProps {
@@ -280,6 +282,7 @@ export function Admin() {
     stock_quantity: '0',
     delivery_charge: '0',
     is_available: true,
+    custom_properties: null,
   });
 
   // Drag and drop sensors
@@ -451,6 +454,7 @@ export function Admin() {
       stock_quantity: (product.stock_quantity ?? 0).toString(),
       delivery_charge: (product.delivery_charge ?? 0).toString(),
       is_available: product.is_available ?? false,
+      custom_properties: (product.custom_properties as CustomPropertiesConfig | null) ?? null,
     });
     setImagePreview(product.image_url);
     setSelectedImage(null);
@@ -471,6 +475,7 @@ export function Admin() {
       stock_quantity: '0',
       delivery_charge: '0',
       is_available: true,
+      custom_properties: null,
     });
   };
 
@@ -626,6 +631,7 @@ export function Admin() {
         delivery_charge: deliveryCharge,
         is_available: formData.is_available,
         price_max: priceMax,
+        custom_properties: formData.custom_properties,
       };
 
       if (editingId) {
@@ -882,6 +888,13 @@ export function Admin() {
                 </div>
               </div>
               
+              <div className="sm:col-span-2">
+                <CustomPropertiesEditor
+                  value={formData.custom_properties}
+                  onChange={(config) => setFormData({ ...formData, custom_properties: config })}
+                />
+              </div>
+
               <div className="sm:col-span-2">
                 <label className="flex items-center space-x-2">
                   <input
