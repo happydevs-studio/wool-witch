@@ -11,9 +11,13 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
 import Orders from './pages/Orders';
 import { ProductDetails } from './pages/ProductDetails';
+import { Chat } from './pages/Chat';
+
+// Feature flag for AI chat
+const isChatEnabled = import.meta.env.VITE_ENABLE_AI_CHAT === 'true';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details'>('shop');
+  const [currentPage, setCurrentPage] = useState<'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details' | 'chat'>('shop');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const renderPage = () => {
@@ -56,6 +60,8 @@ function App() {
         return <PrivacyPolicy onNavigate={setCurrentPage} />;
       case 'terms-of-service':
         return <TermsOfService onNavigate={setCurrentPage} />;
+      case 'chat':
+        return isChatEnabled ? <Chat /> : <Shop onViewProduct={handleProductView} />;
       default:
         return <Shop onViewProduct={handleProductView} />;
     }

@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { ShoppingBag, User, LogOut, UserCog, Menu, X } from 'lucide-react';
+import { ShoppingBag, User, LogOut, UserCog, Menu, X, MessageSquare } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import woolwitchLogo from '../assets/woolwitch.jpg';
 
+// Feature flag for AI chat
+const isChatEnabled = import.meta.env.VITE_ENABLE_AI_CHAT === 'true';
+
 interface HeaderProps {
-  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details';
-  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => void;
+  currentPage: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'product-details' | 'chat';
+  onNavigate: (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'chat') => void;
 }
 
 export function Header({ currentPage, onNavigate }: HeaderProps) {
@@ -26,7 +29,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
     }
   };
 
-  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders') => {
+  const handleNavigation = (page: 'shop' | 'cart' | 'checkout' | 'admin' | 'about' | 'contact' | 'privacy-policy' | 'terms-of-service' | 'orders' | 'chat') => {
     onNavigate(page);
     setMobileMenuOpen(false);
   };
@@ -97,6 +100,19 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             >
               About
             </button>
+            {isChatEnabled && (
+              <button
+                onClick={() => handleNavigation('chat')}
+                className={`font-medium transition-colors flex items-center gap-1 ${
+                  currentPage === 'chat'
+                    ? 'text-rose-600'
+                    : 'text-gray-700 hover:text-rose-600'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                AI Chat
+              </button>
+            )}
             <button
               onClick={() => handleNavigation('contact')}
               className={`font-medium transition-colors ${
@@ -211,6 +227,18 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
             >
               About
             </button>
+            {isChatEnabled && (
+              <button
+                onClick={() => handleNavigation('chat')}
+                className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                  currentPage === 'chat'
+                    ? 'bg-rose-50 text-rose-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                AI Chat
+              </button>
+            )}
             <button
               onClick={() => handleNavigation('contact')}
               className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
