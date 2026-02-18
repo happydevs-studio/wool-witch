@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Upload, Package, ShoppingCart, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { dataService } from '../lib/dataService';
@@ -259,6 +259,7 @@ function SortableProductCard({ product, onEdit, onDelete, isReordering, onMoveUp
 
 export function Admin() {
   const { isAdmin } = useAuth();
+  const formRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -458,6 +459,20 @@ export function Admin() {
     });
     setImagePreview(product.image_url);
     setSelectedImage(null);
+    
+    // Scroll to form on next render
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleAddProduct = () => {
+    setIsAdding(true);
+    
+    // Scroll to form on next render
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleCancel = () => {
@@ -701,7 +716,7 @@ export function Admin() {
           
           {activeTab === 'products' && (
             <button
-              onClick={() => setIsAdding(true)}
+              onClick={handleAddProduct}
               className="flex items-center justify-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
             >
               <Plus className="w-5 h-5" />
@@ -755,7 +770,7 @@ export function Admin() {
             </div>
 
         {(isAdding || editingId) && (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <div ref={formRef} className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
             <h2 className="text-lg sm:text-xl font-semibold mb-4">
               {isAdding ? 'Add New Product' : 'Edit Product'}
             </h2>
