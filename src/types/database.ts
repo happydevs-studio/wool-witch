@@ -1074,6 +1074,7 @@ export interface StripeDetails {
 export interface CartItem {
   product: Product;
   quantity: number;
+  customSelections?: CustomPropertySelection[];
 }
 
 // Order creation data interface
@@ -1119,6 +1120,7 @@ export interface CustomPropertyBase {
 export interface CustomPropertyDropdown extends CustomPropertyBase {
   type: 'dropdown';
   options: string[];
+  optionPrices?: Record<string, number>; // map of option label to absolute price
   defaultValue?: string;
 }
 

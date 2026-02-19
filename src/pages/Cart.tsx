@@ -1,5 +1,6 @@
 import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { getEffectivePrice } from '../lib/orderService';
 
 interface CartProps {
   onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
@@ -89,7 +90,7 @@ export function Cart({ onNavigate }: CartProps) {
                       )}
                       
                       <p className="text-2xl font-bold text-gray-900">
-                        £{item.product.price.toFixed(2)}
+                        £{getEffectivePrice(item).toFixed(2)}
                       </p>
                       {item.product.delivery_charge != null && item.product.delivery_charge > 0 && (
                         <p className="text-sm text-gray-600">
@@ -133,11 +134,11 @@ export function Cart({ onNavigate }: CartProps) {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
 
               <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex justify-between text-sm">
+                {items.map((item, index) => (
+                  <div key={`${item.product.id}-${index}`} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.product.name} x {item.quantity}</span>
                     <span className="font-medium text-gray-900">
-                      £{(item.product.price * item.quantity).toFixed(2)}
+                      £{(getEffectivePrice(item) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { OptimizedImage } from './OptimizedImage';
 import { CustomPropertiesInput } from './CustomPropertiesInput';
+import { getProductPriceRange } from '../lib/orderService';
 import type { Product, CustomPropertiesConfig, CustomPropertySelection } from '../types/database';
 
 interface ProductCardProps {
@@ -18,6 +19,8 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
 
   const customProperties = product.custom_properties as CustomPropertiesConfig | null;
   const hasCustomProperties = customProperties?.properties && customProperties.properties.length > 0;
+
+  const { min: priceMin, max: priceMax } = getProductPriceRange(customProperties ?? null, product.price, product.price_max ?? null);
 
   const handleAddToCart = () => {
     if (hasCustomProperties) {
@@ -107,9 +110,9 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <span className="text-2xl font-bold text-gray-900">
-                {product.price_max && product.price_max > product.price 
-                  ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
-                  : `£${product.price.toFixed(2)}`
+                {priceMax > priceMin
+                  ? `£${priceMin.toFixed(2)} - £${priceMax.toFixed(2)}`
+                  : `£${priceMin.toFixed(2)}`
                 }
               </span>
               {product.delivery_charge != null && product.delivery_charge > 0 && (
@@ -168,6 +171,7 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
                 properties={customProperties.properties}
                 values={customSelections}
                 onChange={setCustomSelections}
+                basePrice={product.price}
               />
 
               <div className="flex gap-3 mt-6">

@@ -3,7 +3,8 @@ import { ArrowLeft, ShoppingCart, Package, Truck, Check, AlertCircle } from 'luc
 import { dataService } from '../lib/dataService';
 import { useCart } from '../contexts/CartContext';
 import { OptimizedImage } from '../components/OptimizedImage';
-import type { Product } from '../types/database';
+import { getProductPriceRange } from '../lib/orderService';
+import type { Product, CustomPropertiesConfig } from '../types/database';
 
 interface ProductDetailsProps {
   productId: string;
@@ -110,6 +111,8 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
 
   const isOutOfStock = product.stock_quantity != null && product.stock_quantity === 0;
   const isLowStock = product.stock_quantity != null && product.stock_quantity < 5 && product.stock_quantity > 0;
+  const customProperties = product.custom_properties as CustomPropertiesConfig | null;
+  const { min: priceMin, max: priceMax } = getProductPriceRange(customProperties, product.price, product.price_max ?? null);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
@@ -166,9 +169,9 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold text-gray-900">
-                {product.price_max && product.price_max > product.price
-                  ? `£${product.price.toFixed(2)} - £${product.price_max.toFixed(2)}`
-                  : `£${product.price.toFixed(2)}`
+                {priceMax > priceMin
+                  ? `£${priceMin.toFixed(2)} - £${priceMax.toFixed(2)}`
+                  : `£${priceMin.toFixed(2)}`
                 }
               </span>
               {product.delivery_charge != null && product.delivery_charge > 0 && (
