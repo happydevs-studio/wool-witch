@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import type { 
   CustomProperty, 
@@ -15,6 +16,7 @@ interface CustomPropertiesEditorProps {
 
 export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEditorProps) {
   const properties = value?.properties || [];
+  const [dropdownInputs, setDropdownInputs] = useState<Record<string, string>>({});
 
   const addProperty = () => {
     const newProperty: CustomProperty = {
@@ -277,6 +279,31 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={property.id in dropdownInputs ? dropdownInputs[property.id] : property.options.join(', ')}
+                      onChange={(e) => setDropdownInputs(prev => ({ ...prev, [property.id]: e.target.value }))}
+                      onBlur={(e) => {
+                        updateDropdownOptions(index, e.target.value);
+                        setDropdownInputs(prev => {
+                          const next = { ...prev };
+                          delete next[property.id];
+                          return next;
+                        });
+                      }}
+                      placeholder="Options (comma-separated, e.g., Small, Medium, Large)"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                    {property.options.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {property.options.map((option, optIndex) => (
+                          <span
+                            key={optIndex}
+                            className="inline-flex items-center px-2 py-1 text-xs bg-white border border-gray-300 rounded-md"
+                          >
+                            {option}
+                          </span>
                         ))}
                         {Object.keys((property as CustomPropertyDropdown).optionPrices ?? {}).length > 0 && (
                           <p className="text-xs text-blue-600 mt-1">
