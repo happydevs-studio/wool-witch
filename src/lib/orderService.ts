@@ -23,7 +23,9 @@ import type {
   CartItem,
   OrderAddress,
   PayPalDetails,
-  StripeDetails
+  StripeDetails,
+  CustomPropertiesConfig,
+  CustomPropertyDropdown
 } from '../types/database';
 
 const isDevRuntime = (): boolean => {
@@ -41,9 +43,62 @@ const isDevRuntime = (): boolean => {
 // ORDER CALCULATION UTILITIES
 // ========================================
 
+/**
+ * Returns the effective price for a cart item, taking into account any
+ * custom property option price selected by the customer.
+ */
+export function getEffectivePrice(item: CartItem): number {
+  const selections = item.customSelections;
+  if (!selections || selections.length === 0) return item.product.price;
+
+  const config = item.product.custom_properties as CustomPropertiesConfig | null;
+  if (!config) return item.product.price;
+
+  for (const selection of selections) {
+    const property = config.properties.find(p => p.id === selection.propertyId);
+    if (property?.type === 'dropdown') {
+      const dropdown = property as CustomPropertyDropdown;
+      const optionPrice = dropdown.optionPrices?.[selection.value as string];
+      if (optionPrice !== undefined) return optionPrice;
+    }
+  }
+
+  return item.product.price;
+}
+
+/**
+ * Returns the { min, max } price range for a product, taking into account any
+ * dropdown option prices defined on custom properties.
+ */
+export function getProductPriceRange(
+  customProperties: CustomPropertiesConfig | null,
+  basePrice: number,
+  basePriceMax: number | null
+): { min: number; max: number } {
+  if (!customProperties) return { min: basePrice, max: basePriceMax ?? basePrice };
+
+  const allOptionPrices: number[] = [];
+  for (const property of customProperties.properties) {
+    if (property.type !== 'dropdown') continue;
+    const dropdown = property as CustomPropertyDropdown;
+    if (!dropdown.optionPrices) continue;
+    const prices = Object.values(dropdown.optionPrices);
+    if (prices.length > 0) allOptionPrices.push(...prices);
+  }
+
+  if (allOptionPrices.length === 0) {
+    return { min: basePrice, max: basePriceMax ?? basePrice };
+  }
+
+  return {
+    min: Math.min(...allOptionPrices),
+    max: Math.max(...allOptionPrices),
+  };
+}
+
 export function calculateSubtotal(cartItems: CartItem[]): number {
   return cartItems.reduce((total, item) => {
-    return total + (item.product.price * item.quantity);
+    return total + (getEffectivePrice(item) * item.quantity);
   }, 0);
 }
 
@@ -121,7 +176,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
     const orderItems = cartItems.map(item => ({
       product_id: item.product.id,
       product_name: item.product.name,
-      product_price: item.product.price,
+      product_price: getEffectivePrice(item),
       quantity: item.quantity,
       delivery_charge: item.product.delivery_charge || 0
     }));

@@ -6,7 +6,7 @@ import PaymentMethodSelector, { PaymentMethod } from '../components/PaymentMetho
 import PayPalButton, { PayPalPaymentData } from '../components/PayPalButton';
 // StripeCardPayment not needed since card payment is hidden
 // import StripeCardPayment from '../components/StripeCardPayment';
-import { createOrder, validateOrderData } from '../lib/orderService';
+import { createOrder, validateOrderData, getEffectivePrice } from '../lib/orderService';
 import type { OrderAddress, CreateOrderData } from '../types/database';
 // StripeDetails not needed since card payment is hidden
 // import type { StripeDetails } from '../types/database';
@@ -433,11 +433,11 @@ export function Checkout({ onNavigate }: CheckoutProps) {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
 
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex justify-between text-sm">
+                {items.map((item, index) => (
+                  <div key={`${item.product.id}-${index}`} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.product.name} x {item.quantity}</span>
                     <span className="font-medium text-gray-900">
-                      £{(item.product.price * item.quantity).toFixed(2)}
+                      £{(getEffectivePrice(item) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}

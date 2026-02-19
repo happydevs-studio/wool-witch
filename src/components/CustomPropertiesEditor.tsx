@@ -3,6 +3,7 @@ import type {
   CustomProperty, 
   CustomPropertyType, 
   CustomPropertiesConfig,
+  CustomPropertyDropdown,
   CustomPropertyText,
   CustomPropertyNumber
 } from '../types/database';
@@ -88,12 +89,69 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
     onChange({ properties: newProperties });
   };
 
-  const updateDropdownOptions = (index: number, optionsString: string) => {
-    const property = properties[index];
+  const addDropdownOption = (propertyIndex: number) => {
+    const property = properties[propertyIndex];
     if (property.type !== 'dropdown') return;
+    const dropdown = property as CustomPropertyDropdown;
+    updateProperty(propertyIndex, { options: [...dropdown.options, ''] } as Partial<CustomPropertyDropdown>);
+  };
 
-    const options = optionsString.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
-    updateProperty(index, { options });
+  const updateDropdownOptionLabel = (propertyIndex: number, optionIndex: number, label: string) => {
+    const property = properties[propertyIndex];
+    if (property.type !== 'dropdown') return;
+    const dropdown = property as CustomPropertyDropdown;
+
+    const newOptions = [...dropdown.options];
+    const oldLabel = newOptions[optionIndex];
+    newOptions[optionIndex] = label;
+
+    // Also update optionPrices key if it existed under the old label
+    const newOptionPrices = dropdown.optionPrices ? { ...dropdown.optionPrices } : {};
+    if (oldLabel && oldLabel !== label && newOptionPrices[oldLabel] !== undefined) {
+      newOptionPrices[label] = newOptionPrices[oldLabel];
+      delete newOptionPrices[oldLabel];
+    }
+
+    updateProperty(propertyIndex, {
+      options: newOptions,
+      optionPrices: Object.keys(newOptionPrices).length > 0 ? newOptionPrices : undefined,
+    } as Partial<CustomPropertyDropdown>);
+  };
+
+  const updateDropdownOptionPrice = (propertyIndex: number, optionLabel: string, priceStr: string) => {
+    const property = properties[propertyIndex];
+    if (property.type !== 'dropdown') return;
+    const dropdown = property as CustomPropertyDropdown;
+
+    const newOptionPrices = dropdown.optionPrices ? { ...dropdown.optionPrices } : {};
+    if (priceStr === '' || priceStr === undefined) {
+      delete newOptionPrices[optionLabel];
+    } else {
+      const price = parseFloat(priceStr);
+      if (!isNaN(price)) {
+        newOptionPrices[optionLabel] = price;
+      }
+    }
+
+    updateProperty(propertyIndex, {
+      optionPrices: Object.keys(newOptionPrices).length > 0 ? newOptionPrices : undefined,
+    } as Partial<CustomPropertyDropdown>);
+  };
+
+  const removeDropdownOption = (propertyIndex: number, optionIndex: number) => {
+    const property = properties[propertyIndex];
+    if (property.type !== 'dropdown') return;
+    const dropdown = property as CustomPropertyDropdown;
+
+    const removedLabel = dropdown.options[optionIndex];
+    const newOptions = dropdown.options.filter((_, i) => i !== optionIndex);
+    const newOptionPrices = dropdown.optionPrices ? { ...dropdown.optionPrices } : {};
+    if (removedLabel) delete newOptionPrices[removedLabel];
+
+    updateProperty(propertyIndex, {
+      options: newOptions,
+      optionPrices: Object.keys(newOptionPrices).length > 0 ? newOptionPrices : undefined,
+    } as Partial<CustomPropertyDropdown>);
   };
 
   return (
@@ -173,24 +231,58 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
                 </div>
 
                 {property.type === 'dropdown' && (
-                  <div>
-                    <input
-                      type="text"
-                      value={property.options.join(', ')}
-                      onChange={(e) => updateDropdownOptions(index, e.target.value)}
-                      placeholder="Options (comma-separated, e.g., Small, Medium, Large)"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-                    />
-                    {property.options.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {property.options.map((option, optIndex) => (
-                          <span
-                            key={optIndex}
-                            className="inline-flex items-center px-2 py-1 text-xs bg-white border border-gray-300 rounded-md"
-                          >
-                            {option}
-                          </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-600">Options</span>
+                      <button
+                        type="button"
+                        onClick={() => addDropdownOption(index)}
+                        className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Option
+                      </button>
+                    </div>
+                    {(property as CustomPropertyDropdown).options.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No options yet. Click "Add Option" to add one.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {(property as CustomPropertyDropdown).options.map((option, optIndex) => (
+                          <div key={optIndex} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={option}
+                              onChange={(e) => updateDropdownOptionLabel(index, optIndex, e.target.value)}
+                              placeholder={`Option ${optIndex + 1} label`}
+                              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                            />
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm text-gray-500">£</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={(property as CustomPropertyDropdown).optionPrices?.[option] ?? ''}
+                                onChange={(e) => updateDropdownOptionPrice(index, option, e.target.value)}
+                                placeholder="Price"
+                                className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeDropdownOption(index, optIndex)}
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                              title="Remove option"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         ))}
+                        {Object.keys((property as CustomPropertyDropdown).optionPrices ?? {}).length > 0 && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Options with a price will override the product price when selected.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
