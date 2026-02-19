@@ -5,13 +5,16 @@ import type { Product } from '../types/database';
 interface ProductListFields {
   id: string;
   name: string;
+  description: string;
   price: number;
+  price_max: number | null;
   image_url: string;
   category: string;
   stock_quantity: number | null;
   delivery_charge: number | null;
   is_available: boolean | null;
   sort_order: number;
+  custom_properties: import('../types/database').CustomPropertiesConfig | null;
 }
 
 interface ProductSummaryFields {
@@ -119,7 +122,7 @@ export class DataService {
     try {
       let query = supabase
         .from('products_view')
-        .select('id, name, price, image_url, category, stock_quantity, delivery_charge, is_available, sort_order')
+        .select('id, name, description, price, price_max, image_url, category, stock_quantity, delivery_charge, is_available, sort_order, custom_properties')
         .eq('is_available', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
