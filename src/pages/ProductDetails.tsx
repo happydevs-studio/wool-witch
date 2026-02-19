@@ -3,8 +3,9 @@ import { ArrowLeft, ShoppingCart, Package, Truck, Check, AlertCircle } from 'luc
 import { dataService } from '../lib/dataService';
 import { useCart } from '../contexts/CartContext';
 import { OptimizedImage } from '../components/OptimizedImage';
-import { getProductPriceRange } from '../lib/orderService';
-import type { Product, CustomPropertiesConfig } from '../types/database';
+import { CustomPropertiesInput } from '../components/CustomPropertiesInput';
+import { getProductPriceRange, getEffectivePrice } from '../lib/orderService';
+import type { Product, CustomPropertiesConfig, CustomPropertySelection } from '../types/database';
 
 interface ProductDetailsProps {
   productId: string;
@@ -17,6 +18,8 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const [customSelections, setCustomSelections] = useState<CustomPropertySelection[]>([]);
+  const [customError, setCustomError] = useState<string | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -44,8 +47,23 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    
-    addItem(product, quantity);
+
+    const customProperties = product.custom_properties as CustomPropertiesConfig | null;
+    const hasCustomProperties = customProperties?.properties && customProperties.properties.length > 0;
+
+    if (hasCustomProperties) {
+      const allRequiredFilled = customProperties!.properties
+        .filter(p => p.required)
+        .every(p => customSelections.some(s => s.propertyId === p.id && s.value !== ''));
+
+      if (!allRequiredFilled) {
+        setCustomError('Please fill in all required fields before adding to bag.');
+        return;
+      }
+    }
+
+    setCustomError(null);
+    addItem(product, quantity, hasCustomProperties ? customSelections : undefined);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
@@ -112,7 +130,14 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
   const isOutOfStock = product.stock_quantity != null && product.stock_quantity === 0;
   const isLowStock = product.stock_quantity != null && product.stock_quantity < 5 && product.stock_quantity > 0;
   const customProperties = product.custom_properties as CustomPropertiesConfig | null;
+  const hasCustomProperties = !!(customProperties?.properties && customProperties.properties.length > 0);
   const { min: priceMin, max: priceMax } = getProductPriceRange(customProperties, product.price, product.price_max ?? null);
+
+  // Compute the effective price for the current custom selections so the displayed price
+  // updates as the customer picks options (e.g. size dropdown with per-option prices).
+  const effectiveDisplayPrice = hasCustomProperties
+    ? getEffectivePrice({ product, quantity, customSelections })
+    : product.price;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
@@ -169,9 +194,11 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold text-gray-900">
-                {priceMax > priceMin
-                  ? `£${priceMin.toFixed(2)} - £${priceMax.toFixed(2)}`
-                  : `£${priceMin.toFixed(2)}`
+                {effectiveDisplayPrice !== product.price
+                  ? `£${effectiveDisplayPrice.toFixed(2)}`
+                  : priceMax > priceMin
+                    ? `£${priceMin.toFixed(2)} - £${priceMax.toFixed(2)}`
+                    : `£${priceMin.toFixed(2)}`
                 }
               </span>
               {product.delivery_charge != null && product.delivery_charge > 0 && (
@@ -226,6 +253,23 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
                   )}
                 </div>
               </div>
+            )}
+
+            {/* Custom Properties */}
+            {hasCustomProperties && (
+              <CustomPropertiesInput
+                properties={customProperties!.properties}
+                values={customSelections}
+                onChange={(values) => {
+                  setCustomSelections(values);
+                  setCustomError(null);
+                }}
+                basePrice={product.price}
+              />
+            )}
+
+            {customError && (
+              <p className="text-sm text-red-600">{customError}</p>
             )}
 
             {/* Add to Bag Button */}
