@@ -1,13 +1,35 @@
-import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, Plus, Minus, ArrowLeft, Edit2, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { CustomPropertiesInput } from '../components/CustomPropertiesInput';
 import { getEffectivePrice } from '../lib/orderService';
+import type { CustomPropertiesConfig, CustomPropertySelection } from '../types/database';
 
 interface CartProps {
   onNavigate: (page: 'shop' | 'cart' | 'checkout') => void;
 }
 
 export function Cart({ onNavigate }: CartProps) {
-  const { items, removeItem, updateQuantity, subtotal, deliveryTotal, total } = useCart();
+  const { items, removeItem, updateQuantity, updateCustomSelections, subtotal, deliveryTotal, total } = useCart();
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingSelections, setEditingSelections] = useState<CustomPropertySelection[]>([]);
+
+  const startEditing = (itemId: string, currentSelections: CustomPropertySelection[]) => {
+    setEditingItemId(itemId);
+    setEditingSelections([...currentSelections]);
+  };
+
+  const saveEdits = () => {
+    if (editingItemId) {
+      updateCustomSelections(editingItemId, editingSelections);
+      setEditingItemId(null);
+    }
+  };
+
+  const cancelEdits = () => {
+    setEditingItemId(null);
+    setEditingSelections([]);
+  };
 
   if (items.length === 0) {
     return (
@@ -57,75 +79,120 @@ export function Cart({ onNavigate }: CartProps) {
             <h1 className="text-4xl font-serif font-bold text-gray-900 mb-8">Shopping Bag</h1>
 
             <div className="space-y-4">
-              {items.map((item, index) => (
-                <div key={`${item.product.id}-${index}`} className="bg-white rounded-xl shadow-md p-6">
-                  <div className="grid grid-cols-4 gap-4 items-start">
-                    <div className="col-span-1">
-                      <img
-                        src={item.product.image_url}
-                        alt={item.product.name}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                    </div>
+              {items.map((item) => {
+                const customProperties = item.product.custom_properties as CustomPropertiesConfig | null;
+                const hasCustomProperties = !!(customProperties?.properties && customProperties.properties.length > 0);
+                const isEditing = editingItemId === item.id;
 
-                    <div className="col-span-2">
-                      <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                        {item.product.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3">{item.product.category}</p>
-                      
-                      {item.customSelections && item.customSelections.length > 0 && (
-                        <div className="mb-3 space-y-1">
-                          {item.customSelections.map((selection) => {
-                            const property = (item.product.custom_properties as any)?.properties?.find(
-                              (p: any) => p.id === selection.propertyId
-                            );
-                            return property ? (
-                              <p key={selection.propertyId} className="text-sm text-gray-600">
-                                <span className="font-medium">{property.label}:</span> {selection.value}
-                              </p>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
-                      
-                      <p className="text-2xl font-bold text-gray-900">
-                        £{getEffectivePrice(item).toFixed(2)}
-                      </p>
-                      {item.product.delivery_charge != null && item.product.delivery_charge > 0 && (
-                        <p className="text-sm text-gray-600">
-                          + £{item.product.delivery_charge.toFixed(2)} delivery
+                return (
+                  <div key={item.id} className="bg-white rounded-xl shadow-md p-6">
+                    <div className="grid grid-cols-4 gap-4 items-start">
+                      <div className="col-span-1">
+                        <img
+                          src={item.product.image_url}
+                          alt={item.product.name}
+                          className="w-full h-24 object-cover rounded-lg"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                          {item.product.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">{item.product.category}</p>
+                        
+                        {item.customSelections && item.customSelections.length > 0 && !isEditing && (
+                          <div className="mb-3 space-y-1">
+                            {item.customSelections.map((selection) => {
+                              const property = customProperties?.properties?.find(
+                                (p) => p.id === selection.propertyId
+                              );
+                              return property ? (
+                                <p key={selection.propertyId} className="text-sm text-gray-600">
+                                  <span className="font-medium">{property.label}:</span> {selection.value}
+                                </p>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                        
+                        <p className="text-2xl font-bold text-gray-900">
+                          £{getEffectivePrice(item).toFixed(2)}
                         </p>
-                      )}
-                    </div>
+                        {item.product.delivery_charge != null && item.product.delivery_charge > 0 && (
+                          <p className="text-sm text-gray-600">
+                            + £{item.product.delivery_charge.toFixed(2)} delivery
+                          </p>
+                        )}
+                      </div>
 
-                    <div className="col-span-1 flex flex-col items-end space-y-3">
-                      <button
-                        onClick={() => removeItem(item.product.id)}
-                        className="text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      <div className="col-span-1 flex flex-col items-end space-y-3">
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
 
-                      <div className="flex items-center space-x-2 border border-gray-300 rounded-lg">
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          className="p-1 hover:bg-gray-100 transition-colors"
-                        >
-                          <Minus className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <span className="w-8 text-center font-medium">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          className="p-1 hover:bg-gray-100 transition-colors"
-                        >
-                          <Plus className="w-4 h-4 text-gray-600" />
-                        </button>
+                        <div className="flex items-center space-x-2 border border-gray-300 rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1 hover:bg-gray-100 transition-colors"
+                          >
+                            <Minus className="w-4 h-4 text-gray-600" />
+                          </button>
+                          <span className="w-8 text-center font-medium">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1 hover:bg-gray-100 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
+
+                        {hasCustomProperties && !isEditing && (
+                          <button
+                            onClick={() => startEditing(item.id, item.customSelections || [])}
+                            className="text-rose-600 hover:text-rose-700 transition-colors flex items-center space-x-1 text-sm"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            <span>Edit</span>
+                          </button>
+                        )}
                       </div>
                     </div>
+
+                    {isEditing && customProperties?.properties && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="mb-4">
+                          <h4 className="font-semibold text-gray-900 mb-4">Edit Product Details</h4>
+                          <CustomPropertiesInput
+                            properties={customProperties.properties}
+                            values={editingSelections}
+                            onChange={setEditingSelections}
+                            basePrice={item.product.price}
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={saveEdits}
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg font-medium transition-colors"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={cancelEdits}
+                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -134,8 +201,8 @@ export function Cart({ onNavigate }: CartProps) {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
 
               <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
-                {items.map((item, index) => (
-                  <div key={`${item.product.id}-${index}`} className="flex justify-between text-sm">
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.product.name} x {item.quantity}</span>
                     <span className="font-medium text-gray-900">
                       £{(getEffectivePrice(item) * item.quantity).toFixed(2)}

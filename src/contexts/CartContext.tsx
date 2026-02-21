@@ -4,6 +4,7 @@ import { calculateSubtotal, calculateDeliveryTotal, calculateTotal } from '../li
 import type { Product, CustomPropertySelection } from '../types/database';
 
 export interface CartItem {
+  id: string; // Unique identifier for this cart line item
   product: Product;
   quantity: number;
   customSelections?: CustomPropertySelection[];
@@ -12,8 +13,9 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addItem: (product: Product, quantity: number, customSelections?: CustomPropertySelection[]) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, quantity: number) => void;
+  updateCustomSelections: (cartItemId: string, customSelections: CustomPropertySelection[]) => void;
   clearCart: () => void;
   cleanupCart: () => Promise<number>; // Returns number of items removed
   subtotal: number;
@@ -118,24 +120,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       }
       
-      return [...prevItems, { product, quantity, customSelections }];
+      const newId = `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      return [...prevItems, { id: newId, product, quantity, customSelections }];
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId));
+  const removeItem = (cartItemIdOrProductId: string) => {
+    setItems((prevItems) => prevItems.filter((item) => {
+      // Support both cartItemId (new) and productId (backward compatibility)
+      if (item.id === cartItemIdOrProductId) return false; // cartItemId match
+      if (item.product.id === cartItemIdOrProductId) return false; // productId match (removes all variants)
+      return true;
+    }));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cartItemIdOrProductId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(cartItemIdOrProductId);
     } else {
       setItems((prevItems) =>
-        prevItems.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
-        )
+        prevItems.map((item) => {
+          // Support both cartItemId (new) and productId (backward compatibility)
+          if (item.id === cartItemIdOrProductId || item.product.id === cartItemIdOrProductId) {
+            return { ...item, quantity };
+          }
+          return item;
+        })
       );
     }
+  };
+
+  const updateCustomSelections = (cartItemId: string, customSelections: CustomPropertySelection[]) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === cartItemId ? { ...item, customSelections } : item
+      )
+    );
   };
 
   const clearCart = () => {
@@ -184,6 +204,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItem,
       removeItem,
       updateQuantity,
+      updateCustomSelections,
       clearCart,
       cleanupCart,
       subtotal,
