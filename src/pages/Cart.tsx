@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { Trash2, Plus, Minus, ArrowLeft, Edit2, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { CustomPropertiesInput } from '../components/CustomPropertiesInput';
@@ -108,10 +108,14 @@ export function Cart({ onNavigate }: CartProps) {
                                 (p) => p.id === selection.propertyId
                               );
                               return property ? (
-                                <p key={selection.propertyId} className="text-sm text-gray-600">
-                                  <span className="font-medium">{property.label}:</span> {selection.value}
-                                </p>
-                              ) : null;
+                                <Fragment key={selection.propertyId}>
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">{property.label}:</span> {selection.value}
+                                  </p>
+                                </Fragment>
+                              ) : (
+                                <Fragment key={selection.propertyId} />
+                              );
                             })}
                           </div>
                         )}
