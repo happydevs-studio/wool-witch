@@ -54,7 +54,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false,
   },
   db: {
-    schema: "woolwitch",
+    schema: "woolwitch_api",
   },
 });
 
@@ -160,55 +160,24 @@ async function addProductToDatabase(product, imageUrl) {
   try {
     console.log(`Adding product: ${product.name}...`);
 
-    // First try to find if product exists
-    const { data: existing, error: selectError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("name", product.name)
-      .single();
+    // Use the create_product RPC function from the API layer
+    const { data, error } = await supabase.rpc("create_product", {
+      p_name: product.name,
+      p_description: product.description,
+      p_price: product.price,
+      p_image_url: imageUrl,
+      p_category: product.category,
+      p_stock_quantity: product.stock_quantity,
+      p_delivery_charge: product.delivery_carge || 0,
+      p_is_available: true,
+    });
 
-    if (existing) {
-      // Update existing product
-      const { data, error } = await supabase
-        .from("products")
-        .update({
-          description: product.description,
-          price: product.price,
-          image_url: imageUrl,
-          category: product.category,
-          stock_quantity: product.stock_quantity,
-          is_available: true,
-        })
-        .eq("id", existing.id)
-        .select();
-
-      if (error) {
-        console.error(`Error updating product ${product.name}:`, error);
-        return false;
-      }
-      console.log(`✅ Updated product: ${product.name}`);
-    } else {
-      // Insert new product
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          image_url: imageUrl,
-          category: product.category,
-          stock_quantity: product.stock_quantity,
-          is_available: true,
-        })
-        .select();
-
-      if (error) {
-        console.error(`Error adding product ${product.name}:`, error);
-        return false;
-      }
-      console.log(`✅ Added product: ${product.name}`);
+    if (error) {
+      console.error(`Error adding product ${product.name}:`, error);
+      return false;
     }
 
+    console.log(`✅ Added product: ${product.name}`);
     return true;
   } catch (err) {
     console.error(`Error processing product ${product.name}:`, err);
