@@ -285,6 +285,10 @@ This document outlines the security measures, policies, and best practices imple
 5. [Access Control](#access-control)
 6. [Security Policies](#security-policies)
 7. [Incident Response](#incident-response)
+8. [Security Checklist](#security-checklist)
+9. [Audit History](#audit-history)
+10. [Automated Security Scanning](#automated-security-scanning)
+11. [Future Security Enhancements](#future-security-enhancements)
 
 ---
 
@@ -711,6 +715,201 @@ Use this checklist when making changes:
 | Date | Auditor | Changes | Migration |
 |------|---------|---------|-----------|
 | 2024-12-30 | Security Review | Initial security hardening, permission tightening, storage policy fixes | `20251230133235_woolwitch_security_hardening.sql` |
+
+---
+
+## Automated Security Scanning
+
+The Wool Witch project implements comprehensive automated security scanning through GitHub Actions workflows. Security scans run automatically and create issues when vulnerabilities are detected.
+
+### Security Scanning Workflow
+
+**Workflow File**: `.github/workflows/security.yml`
+
+**Triggers**:
+- Push to `main` branch
+- Pull requests to `main` branch
+- Daily scheduled scan at 2:00 AM UTC
+- Manual workflow dispatch
+
+### Security Checks
+
+#### 1. CodeQL Analysis
+- **Purpose**: Static code analysis for security vulnerabilities and code quality issues
+- **Language**: JavaScript/TypeScript
+- **Query Set**: `security-and-quality`
+- **Coverage**: Detects SQL injection, XSS, path traversal, and other common vulnerabilities
+
+#### 2. Secret Scanning
+- **Tool**: TruffleHog OSS
+- **Purpose**: Detect exposed secrets, API keys, tokens, and credentials
+- **Verification**: Only verified secrets trigger failures
+- **Scope**: Full repository history
+
+#### 3. NPM Security Audit
+- **Production Dependencies**: Fails on high/critical vulnerabilities
+- **Dev Dependencies**: Monitored but doesn't fail workflow
+- **Checks**: Known vulnerabilities in npm packages
+- **Tool**: `npm audit` with JSON output analysis
+
+#### 4. Dependency Review (PR only)
+- **Trigger**: Pull requests only
+- **Purpose**: Review new dependencies for vulnerabilities
+- **Fail Level**: High severity vulnerabilities
+- **License Check**: Blocks GPL-2.0 and GPL-3.0 licenses
+
+### Automated Issue Management
+
+#### Issue Creation on Failure
+
+When any security scan fails, the workflow automatically:
+
+1. **Creates a GitHub Issue** with:
+   - 🔒 Title: "Security Scan Failed - [Date]"
+   - Detailed failure report including:
+     - Workflow run link
+     - Branch and commit information
+     - List of failed security checks
+     - Next steps for remediation
+   - Labels: `security`, `security-scan-failure`, `automated`, `high-priority`
+
+2. **Prevents Duplicate Issues**:
+   - Checks for existing open security failure issues
+   - Adds a comment to existing issues instead of creating duplicates
+   - Each failure adds a timestamped comment with latest details
+
+3. **Provides Context**:
+   - Direct links to workflow run logs
+   - Links to Security tab for detailed alerts
+   - Specific remediation steps for each type of failure
+
+#### Auto-Resolution on Success
+
+When all security scans pass successfully:
+
+1. **Finds Open Issues**:
+   - Searches for issues with `security-scan-failure` and `automated` labels
+   - Only processes open issues
+
+2. **Closes Issues Automatically**:
+   - Adds a success comment with timestamp
+   - Closes the issue automatically
+   - Includes link to successful workflow run
+
+### Monitoring Security Scans
+
+#### View Security Scan Status
+
+```bash
+# Check workflow status
+gh workflow view security.yml
+
+# List recent security scan runs
+gh run list --workflow=security.yml
+
+# View specific run
+gh run view <run-id>
+```
+
+#### Manual Trigger
+
+```bash
+# Trigger security scan manually
+gh workflow run security.yml
+```
+
+#### View Automated Issues
+
+Security failure issues are tagged with:
+- `security-scan-failure` - Identifies security workflow failures
+- `automated` - Indicates auto-created issue
+- `security` - General security category
+- `high-priority` - Requires immediate attention
+
+Filter in GitHub Issues:
+```
+is:issue label:security-scan-failure label:automated
+```
+
+### Best Practices
+
+1. **Monitor Daily**:
+   - Security scans run daily at 2:00 AM UTC
+   - Check for automated issues regularly
+
+2. **Address Issues Promptly**:
+   - Security issues are marked `high-priority`
+   - Follow the remediation steps in the issue description
+   - Link fixes to the security issue
+
+3. **Review Before Merge**:
+   - All PRs trigger security scans
+   - Don't merge if security scans fail
+   - Dependency review blocks vulnerable dependencies
+
+4. **Keep Dependencies Updated**:
+   - Run `npm audit` locally before committing
+   - Use `npm audit fix` to auto-fix when possible
+   - Review and update dependencies monthly
+
+5. **Handle Secrets Properly**:
+   - Never commit secrets to the repository
+   - Use environment variables for sensitive data
+   - Rotate exposed credentials immediately
+
+### Security Scan Results
+
+#### Successful Scan Output
+```
+✅ CodeQL Analysis: success
+✅ Secret Scanning: success
+✅ NPM Security Audit: success
+✅ Security Status Check: success
+```
+
+#### Failed Scan Output
+```
+❌ CodeQL Analysis: failure
+✅ Secret Scanning: success
+✅ NPM Security Audit: success
+❌ Security Status Check: failure
+[GitHub issue created automatically]
+```
+
+### Permissions
+
+The security workflow requires the following permissions:
+```yaml
+permissions:
+  contents: read          # Read repository code
+  security-events: write  # Upload CodeQL results
+  actions: read          # Read workflow results
+  issues: write          # Create/update/close issues
+```
+
+### Integration with Development
+
+#### Local Security Checks
+
+Before pushing code, run local security checks:
+
+```bash
+# NPM audit (production dependencies only)
+npm audit --omit=dev --audit-level=high
+
+# Full audit for visibility (includes dev dependencies)
+npm audit
+
+# Run linting and type checking
+npm run test
+```
+
+#### CI/CD Integration
+
+- Security scans run on every push to `main`
+- Pull requests include dependency review
+- Failed scans block merge (if configured as required check)
+- Issues created automatically ensure visibility
 
 ---
 
