@@ -14,6 +14,7 @@ permissions:
   contents: read
   security-events: write
   actions: read
+  issues: write  # For creating issues on security scan failures
 
 jobs:
   codeql:
@@ -94,7 +95,7 @@ jobs:
     - name: Run npm audit (production only)
       run: |
         # Check production dependencies only - fail on high/critical
-        npm audit --production --audit-level=high
+        npm audit --omit=dev --audit-level=high
       
     - name: Run npm audit (all dependencies)
       run: |
@@ -105,9 +106,141 @@ jobs:
     - name: Check for critical vulnerabilities
       run: |
         echo "Checking for critical and high severity vulnerabilities in production..."
-        RESULT=$(npm audit --production --json | jq '.metadata.vulnerabilities | select(.critical > 0 or .high > 0)')
+        RESULT=$(npm audit --omit=dev --json | jq '.metadata.vulnerabilities | select(.critical > 0 or .high > 0)')
         if [ -n "$RESULT" ]; then
           echo "Critical or high severity vulnerabilities found!"
           exit 1
         fi
         echo "No critical or high vulnerabilities found in production dependencies"
+
+  security-status:
+    name: Security Status Check
+    runs-on: ubuntu-latest
+    needs: [codeql, secret-scanning, npm-audit]
+    if: always()  # Run even if previous jobs failed
+    
+    steps:
+    - name: Check security scan results
+      id: check_results
+      run: |
+        echo "CodeQL: ${{ needs.codeql.result }}"
+        echo "Secret Scanning: ${{ needs.secret-scanning.result }}"
+        echo "NPM Audit: ${{ needs.npm-audit.result }}"
+        
+        if [ "${{ needs.codeql.result }}" != "success" ] || \
+           [ "${{ needs.secret-scanning.result }}" != "success" ] || \
+           [ "${{ needs.npm-audit.result }}" != "success" ]; then
+          echo "has_failures=true" >> $GITHUB_OUTPUT
+          exit 1
+        else
+          echo "has_failures=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create issue on security scan failure
+      uses: actions/github-script@v7
+      if: failure()
+      with:
+        script: |
+          const codeqlResult = '${{ needs.codeql.result }}';
+          const secretScanResult = '${{ needs.secret-scanning.result }}';
+          const npmAuditResult = '${{ needs.npm-audit.result }}';
+          
+          let failureDetails = [];
+          if (codeqlResult !== 'success') failureDetails.push(`- ❌ CodeQL Analysis: ${codeqlResult}`);
+          if (secretScanResult !== 'success') failureDetails.push(`- ❌ Secret Scanning: ${secretScanResult}`);
+          if (npmAuditResult !== 'success') failureDetails.push(`- ❌ NPM Security Audit: ${npmAuditResult}`);
+          
+          const title = `🔒 Security Scan Failed - ${new Date().toISOString().split('T')[0]}`;
+          const body = `
+          ## Security Scan Failure Report
+          
+          **Time**: ${new Date().toISOString()}
+          **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: ${{ github.sha }}
+          
+          ### Failed Security Checks
+          ${failureDetails.join('\n')}
+          
+          ### What Happened
+          One or more security scans have detected issues that require attention:
+          
+          ${codeqlResult !== 'success' ? '**CodeQL Analysis Failed**: Code quality or security vulnerabilities detected in the codebase.\n' : ''}
+          ${secretScanResult !== 'success' ? '**Secret Scanning Failed**: Potential secrets or sensitive data detected in the repository.\n' : ''}
+          ${npmAuditResult !== 'success' ? '**NPM Audit Failed**: High or critical severity vulnerabilities found in production dependencies.\n' : ''}
+          
+          ### Next Steps
+          1. Review the [workflow run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details
+          2. Check the [Security tab](${{ github.server_url }}/${{ github.repository }}/security) for alerts
+          3. Address the security issues identified by the failed scans
+          4. For dependency issues, consider running \`npm audit fix\` or updating vulnerable packages
+          5. For code issues, review CodeQL findings and apply recommended fixes
+          6. For secrets, remove them and rotate any exposed credentials
+          
+          ### Security Scan Details
+          - **CodeQL**: Static analysis for security vulnerabilities and code quality issues
+          - **Secret Scanning**: Detection of exposed secrets, tokens, and credentials
+          - **NPM Audit**: Vulnerability scanning of production dependencies
+          
+          This issue will auto-close when all security scans pass successfully.
+          
+          ---
+          *This issue was automatically created by the security scanning workflow.*
+          `;
+          
+          // Check if there's already an open issue for security scan failures
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['security-scan-failure', 'automated'],
+            state: 'open'
+          });
+          
+          if (issues.length === 0) {
+            // Create new issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'security-scan-failure', 'automated', 'high-priority']
+            });
+          } else {
+            // Update existing issue with new failure
+            const issue = issues[0];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `🔒 **Security scan failure detected again**\n\n**Time**: ${new Date().toISOString()}\n**Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n### Failed Checks\n${failureDetails.join('\n')}\n\nThe security issues persist. Please check the latest workflow run for updated failure details.`
+            });
+          }
+    
+    - name: Close security scan issues on success
+      uses: actions/github-script@v7
+      if: success()
+      with:
+        script: |
+          // Close any open security scan failure issues since all scans passed
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['security-scan-failure', 'automated'],
+            state: 'open'
+          });
+          
+          for (const issue of issues) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `✅ **All security scans are now passing**\n\n**Time**: ${new Date().toISOString()}\n**Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nAll security checks have passed successfully. Auto-closing this issue.`
+            });
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed'
+            });
+          }

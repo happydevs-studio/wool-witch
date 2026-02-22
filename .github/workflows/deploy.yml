@@ -38,7 +38,7 @@ jobs:
       run: |
         # Audit for vulnerabilities but don't fail on existing dev-only issues
         # Critical and high severity in production dependencies will fail the build
-        npm audit --production --audit-level=high || true
+        npm audit --omit=dev --audit-level=high || true
         # Full audit for visibility (includes dev dependencies)
         npm audit --audit-level=moderate || echo "Dev dependencies have known issues - see security report"
       
