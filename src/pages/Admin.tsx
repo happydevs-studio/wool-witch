@@ -549,15 +549,25 @@ export function Admin() {
     try {
       setUploading(true);
       
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+        return null;
+      }
+
+      // Compress image before upload (storage has 50KB limit)
+      const compressedFile = await compressImage(file);
+      
       // Generate unique filename with extension validation
-      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
+      const fileExt = compressedFile.name.includes('.') ? compressedFile.name.split('.').pop() : 'jpg';
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = fileName;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('woolwitch-images')
-        .upload(filePath, file, {
+        .upload(filePath, compressedFile, {
           cacheControl: '3600',
           upsert: false
         });
@@ -571,7 +581,17 @@ export function Admin() {
 
       return data.publicUrl;
     } catch (error) {
-      alert('Error uploading image. Please try again.');
+      console.error('Error uploading image:', error);
+      let userMessage = 'Failed to upload image.';
+      if (error instanceof Error) {
+        const msg = error.message || '';
+        if (/format|type|mime|decode/i.test(msg)) {
+          userMessage = 'Image file is corrupted or in an unsupported format.';
+        } else if (/size|large|memory|quota|too big|too large|payload|50|limit/i.test(msg)) {
+          userMessage = 'Image is too large. Please choose a smaller image.';
+        }
+      }
+      alert(`${userMessage} If the problem persists, try another file.`);
       return null;
     } finally {
       setUploading(false);

@@ -151,11 +151,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateCustomSelections = (cartItemId: string, customSelections: CustomPropertySelection[]) => {
-    setItems((prevItems) =>
-      prevItems.map((item) =>
+    setItems((prevItems) => {
+      const itemToUpdate = prevItems.find(item => item.id === cartItemId);
+      if (!itemToUpdate) return prevItems;
+
+      // Check if another item exists with the same product and same selections
+      const matchingItem = prevItems.find((item) => {
+        if (item.id === cartItemId) return false; // Don't match the item being updated
+        if (item.product.id !== itemToUpdate.product.id) return false;
+        
+        // If no custom selections provided, check if other item also has none
+        if (!customSelections || customSelections.length === 0) {
+          return !item.customSelections || item.customSelections.length === 0;
+        }
+        
+        // Compare custom selections
+        if (!item.customSelections || item.customSelections.length !== customSelections.length) {
+          return false;
+        }
+        
+        // Check if all selections match
+        return customSelections.every(selection => 
+          item.customSelections?.some(
+            s => s.propertyId === selection.propertyId && s.value === selection.value
+          )
+        );
+      });
+
+      if (matchingItem) {
+        // Merge with existing matching item and remove the updated item
+        return prevItems
+          .map((item) =>
+            item.id === matchingItem.id
+              ? { ...item, quantity: item.quantity + itemToUpdate.quantity }
+              : item
+          )
+          .filter((item) => item.id !== cartItemId);
+      }
+
+      // No match found, just update the selections
+      return prevItems.map((item) =>
         item.id === cartItemId ? { ...item, customSelections } : item
-      )
-    );
+      );
+    });
   };
 
   const clearCart = () => {

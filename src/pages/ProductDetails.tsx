@@ -162,11 +162,30 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
     ? getEffectivePrice({ product, quantity, customSelections })
     : product.price;
 
-  // Build the full gallery: main image first, then any extras from custom_properties.images
+  // Build the full gallery: main image first, then any extras from custom_properties.images, then option images
   const galleryImages: string[] = [
     product.image_url,
     ...(customProperties?.images ?? []),
   ];
+  
+  // Add unique option images from dropdown properties
+  if (customProperties?.properties) {
+    const optionImages = new Set<string>();
+    for (const prop of customProperties.properties) {
+      if (prop.type === 'dropdown') {
+        const dropdown = prop as CustomPropertyDropdown;
+        if (dropdown.optionImages) {
+          Object.values(dropdown.optionImages).forEach(img => {
+            if (img && !galleryImages.includes(img)) {
+              optionImages.add(img);
+            }
+          });
+        }
+      }
+    }
+    galleryImages.push(...Array.from(optionImages));
+  }
+  
   const displayImage = activeImage ?? product.image_url;
 
   return (
