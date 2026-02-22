@@ -258,7 +258,7 @@ function SortableProductCard({ product, onEdit, onDelete, isReordering, onMoveUp
 }
 
 export function Admin() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
   const formRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
@@ -692,6 +692,14 @@ export function Admin() {
       alert('Error deleting product. Please try again.');
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
