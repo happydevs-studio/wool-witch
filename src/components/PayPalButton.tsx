@@ -69,13 +69,15 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
   useEffect(() => {
     // Check if PayPal is configured
     if (!isPayPalConfigured()) {
-      // Debug logging for production issues
-      console.error('PayPal Configuration Error:', {
-        PROD: import.meta.env.PROD,
-        hasClientId: !!import.meta.env.VITE_PAYPAL_CLIENT_ID,
-        hasProduction: !!import.meta.env.VITE_PAYPAL_CLIENT_ID_PRODUCTION,
-        hasSandbox: !!import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX,
-      });
+      // Debug logging for development only
+      if (import.meta.env.DEV) {
+        console.error('PayPal Configuration Error:', {
+          PROD: import.meta.env.PROD,
+          hasClientId: !!import.meta.env.VITE_PAYPAL_CLIENT_ID,
+          hasProduction: !!import.meta.env.VITE_PAYPAL_CLIENT_ID_PRODUCTION,
+          hasSandbox: !!import.meta.env.VITE_PAYPAL_CLIENT_ID_SANDBOX,
+        });
+      }
       setError('PayPal is not configured. Please contact support.');
       setIsLoading(false);
       return;
@@ -140,7 +142,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
 
     try {
       // Clear any existing PayPal button
-      paypalRef.current.innerHTML = '';
+      paypalRef.current.replaceChildren();
       setButtonRendered(false);
       console.log('Rendering PayPal button...');
 
