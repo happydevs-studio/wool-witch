@@ -2,7 +2,7 @@ import { useState, Fragment } from 'react';
 import { Trash2, Plus, Minus, ArrowLeft, Edit2, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { CustomPropertiesInput } from '../components/CustomPropertiesInput';
-import { getEffectivePrice } from '../lib/orderService';
+import { getEffectivePrice, getEffectiveImage } from '../lib/orderService';
 import type { CustomPropertiesConfig, CustomPropertySelection } from '../types/database';
 
 interface CartProps {
@@ -89,7 +89,7 @@ export function Cart({ onNavigate }: CartProps) {
                     <div className="grid grid-cols-4 gap-4 items-start">
                       <div className="col-span-1">
                         <img
-                          src={item.product.image_url}
+                          src={getEffectiveImage(item)}
                           alt={item.product.name}
                           className="w-full h-24 object-cover rounded-lg"
                         />

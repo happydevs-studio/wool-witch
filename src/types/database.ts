@@ -1121,6 +1121,7 @@ export interface CustomPropertyDropdown extends CustomPropertyBase {
   type: 'dropdown';
   options: string[];
   optionPrices?: Record<string, number>; // map of option label to absolute price
+  optionImages?: Record<string, string>; // map of option label to image URL
   defaultValue?: string;
 }
 
@@ -1160,6 +1161,7 @@ export type CustomProperty =
 // Custom properties structure stored in product
 export interface CustomPropertiesConfig {
   properties: CustomProperty[];
+  images?: string[]; // Additional product gallery images
 }
 
 // Customer's selected values for custom properties

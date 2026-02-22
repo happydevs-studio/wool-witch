@@ -67,6 +67,30 @@ export function getEffectivePrice(item: CartItem): number {
 }
 
 /**
+ * Returns the effective image URL for a cart item, taking into account any
+ * custom property option image selected by the customer.
+ */
+export function getEffectiveImage(item: CartItem): string {
+  const selections = item.customSelections;
+  if (!selections || selections.length === 0) return item.product.image_url;
+
+  const config = item.product.custom_properties as CustomPropertiesConfig | null;
+  if (!config) return item.product.image_url;
+
+  // Find the first dropdown option with an associated image
+  for (const selection of selections) {
+    const property = config.properties.find(p => p.id === selection.propertyId);
+    if (property?.type === 'dropdown') {
+      const dropdown = property as CustomPropertyDropdown;
+      const optionImage = dropdown.optionImages?.[selection.value as string];
+      if (optionImage) return optionImage;
+    }
+  }
+
+  return item.product.image_url;
+}
+
+/**
  * Returns the { min, max } price range for a product, taking into account any
  * dropdown option prices defined on custom properties.
  */
