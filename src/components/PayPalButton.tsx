@@ -108,6 +108,10 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
     try {
       setIsLoading(true);
       setError(null);
+      // Reset SDK state so re-setting isSDKLoaded to true reliably triggers
+      // the useEffect render (important for retry after errors)
+      setIsSDKLoaded(false);
+      setButtonRendered(false);
 
       // Get PayPal client ID from configuration
       const config = getPayPalConfig();
@@ -117,10 +121,13 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
 
       // Use the window.loadPayPalSDK function defined in index.html
       if (window.loadPayPalSDK) {
-        const paypal = await window.loadPayPalSDK(clientId);
+        await window.loadPayPalSDK(clientId);
         console.log('PayPal SDK loaded successfully');
+        // Setting isSDKLoaded triggers the useEffect which renders the button.
+        // Do NOT call renderPayPalButton here directly — that would cause a
+        // race condition where two concurrent renders clear and re-populate
+        // the same DOM container, making PayPal show as unavailable.
         setIsSDKLoaded(true);
-        renderPayPalButton(paypal);
       } else {
         throw new Error('PayPal SDK loader not available');
       }
@@ -309,12 +316,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
       console.error('PayPal button setup error:', error);
       setError(error instanceof Error ? error.message : 'Failed to setup PayPal button');
     }
-  };  // Re-render button when dependencies change
-  useEffect(() => {
-    if (isSDKLoaded && window.paypal) {
-      renderPayPalButton(window.paypal);
-    }
-  }, [cartItems, customerInfo, disabled]);
+  };
 
   if (error) {
     return (
