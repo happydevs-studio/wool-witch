@@ -5,7 +5,7 @@ import { useCart } from '../contexts/CartContext';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { CustomPropertiesInput } from '../components/CustomPropertiesInput';
 import { getProductPriceRange, getEffectivePrice } from '../lib/orderService';
-import type { Product, CustomPropertiesConfig, CustomPropertySelection } from '../types/database';
+import type { Product, CustomPropertiesConfig, CustomPropertySelection, CustomPropertyDropdown } from '../types/database';
 
 interface ProductDetailsProps {
   productId: string;
@@ -20,6 +20,7 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
   const [isAdded, setIsAdded] = useState(false);
   const [customSelections, setCustomSelections] = useState<CustomPropertySelection[]>([]);
   const [customError, setCustomError] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -66,6 +67,28 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
     addItem(product, quantity, hasCustomProperties ? customSelections : undefined);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
+  };
+
+  const handleCustomSelectionsChange = (values: CustomPropertySelection[]) => {
+    setCustomSelections(values);
+    setCustomError(null);
+
+    if (!product) return;
+    const customProperties = product.custom_properties as CustomPropertiesConfig | null;
+    if (!customProperties?.properties) return;
+
+    // Find an image mapped to the selected dropdown option (last matching wins if multiple dropdowns have images)
+    let optionImage: string | null = null;
+    for (const prop of customProperties.properties) {
+      if (prop.type !== 'dropdown') continue;
+      const dropdown = prop as CustomPropertyDropdown;
+      if (!dropdown.optionImages) continue;
+      const selection = values.find(s => s.propertyId === prop.id);
+      if (selection && typeof selection.value === 'string' && dropdown.optionImages[selection.value]) {
+        optionImage = dropdown.optionImages[selection.value];
+      }
+    }
+    setActiveImage(optionImage);
   };
 
   const incrementQuantity = () => {
@@ -139,6 +162,13 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
     ? getEffectivePrice({ product, quantity, customSelections })
     : product.price;
 
+  // Build the full gallery: main image first, then any extras from custom_properties.images
+  const galleryImages: string[] = [
+    product.image_url,
+    ...(customProperties?.images ?? []),
+  ];
+  const displayImage = activeImage ?? product.image_url;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -155,10 +185,10 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Image */}
           <div className="relative">
-            <div className="sticky top-8">
+            <div className="sticky top-8 space-y-3">
               <div className="relative aspect-square overflow-hidden bg-white rounded-xl shadow-lg">
                 <OptimizedImage
-                  src={product.image_url}
+                  src={displayImage}
                   alt={product.name}
                   className="hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -174,6 +204,27 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
                   </div>
                 )}
               </div>
+              {/* Thumbnail gallery strip */}
+              {galleryImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {galleryImages.map((imgUrl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImage(imgUrl)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                        displayImage === imgUrl ? 'border-rose-500' : 'border-gray-200 hover:border-rose-300'
+                      }`}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`${product.name} view ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -260,10 +311,7 @@ export function ProductDetails({ productId, onBack }: ProductDetailsProps) {
               <CustomPropertiesInput
                 properties={customProperties!.properties}
                 values={customSelections}
-                onChange={(values) => {
-                  setCustomSelections(values);
-                  setCustomError(null);
-                }}
+                onChange={handleCustomSelectionsChange}
                 basePrice={product.price}
               />
             )}

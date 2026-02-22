@@ -907,6 +907,7 @@ export function Admin() {
                 <CustomPropertiesEditor
                   value={formData.custom_properties}
                   onChange={(config) => setFormData({ ...formData, custom_properties: config })}
+                  onUploadImage={uploadImage}
                 />
               </div>
 

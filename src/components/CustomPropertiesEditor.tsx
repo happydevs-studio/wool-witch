@@ -1,4 +1,5 @@
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { useRef } from 'react';
+import { Plus, Trash2, GripVertical, Image, Upload } from 'lucide-react';
 import type { 
   CustomProperty, 
   CustomPropertyType, 
@@ -11,10 +12,13 @@ import type {
 interface CustomPropertiesEditorProps {
   value: CustomPropertiesConfig | null;
   onChange: (config: CustomPropertiesConfig | null) => void;
+  onUploadImage?: (file: File) => Promise<string | null>;
 }
 
-export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEditorProps) {
+export function CustomPropertiesEditor({ value, onChange, onUploadImage }: CustomPropertiesEditorProps) {
   const properties = value?.properties || [];
+  const galleryImages = value?.images || [];
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const addProperty = () => {
     const newProperty: CustomProperty = {
@@ -111,9 +115,16 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
       delete newOptionPrices[oldLabel];
     }
 
+    const newOptionImages = dropdown.optionImages ? { ...dropdown.optionImages } : {};
+    if (oldLabel && oldLabel !== label && newOptionImages[oldLabel] !== undefined) {
+      newOptionImages[label] = newOptionImages[oldLabel];
+      delete newOptionImages[oldLabel];
+    }
+
     updateProperty(propertyIndex, {
       options: newOptions,
       optionPrices: Object.keys(newOptionPrices).length > 0 ? newOptionPrices : undefined,
+      optionImages: Object.keys(newOptionImages).length > 0 ? newOptionImages : undefined,
     } as Partial<CustomPropertyDropdown>);
   };
 
@@ -146,15 +157,110 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
     const newOptions = dropdown.options.filter((_, i) => i !== optionIndex);
     const newOptionPrices = dropdown.optionPrices ? { ...dropdown.optionPrices } : {};
     if (removedLabel) delete newOptionPrices[removedLabel];
+    const newOptionImages = dropdown.optionImages ? { ...dropdown.optionImages } : {};
+    if (removedLabel) delete newOptionImages[removedLabel];
 
     updateProperty(propertyIndex, {
       options: newOptions,
       optionPrices: Object.keys(newOptionPrices).length > 0 ? newOptionPrices : undefined,
+      optionImages: Object.keys(newOptionImages).length > 0 ? newOptionImages : undefined,
     } as Partial<CustomPropertyDropdown>);
   };
 
+  const updateDropdownOptionImage = (propertyIndex: number, optionLabel: string, imageUrl: string) => {
+    const property = properties[propertyIndex];
+    if (property.type !== 'dropdown') return;
+    const dropdown = property as CustomPropertyDropdown;
+
+    const newOptionImages = dropdown.optionImages ? { ...dropdown.optionImages } : {};
+    if (imageUrl === '') {
+      delete newOptionImages[optionLabel];
+    } else {
+      newOptionImages[optionLabel] = imageUrl;
+    }
+
+    updateProperty(propertyIndex, {
+      optionImages: Object.keys(newOptionImages).length > 0 ? newOptionImages : undefined,
+    } as Partial<CustomPropertyDropdown>);
+  };
+
+  const handleOptionImageUpload = async (propertyIndex: number, optionLabel: string, file: File) => {
+    if (!onUploadImage || !optionLabel) return;
+    const url = await onUploadImage(file);
+    if (url) {
+      updateDropdownOptionImage(propertyIndex, optionLabel, url);
+    }
+  };
+
+  const addGalleryImage = async (file: File) => {
+    if (!onUploadImage) return;
+    const url = await onUploadImage(file);
+    if (url) {
+      const newImages = [...galleryImages, url];
+      onChange({ ...(value ?? { properties: [] }), images: newImages });
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const newImages = galleryImages.filter((_, i) => i !== index);
+    onChange({ ...(value ?? { properties: [] }), images: newImages.length > 0 ? newImages : undefined });
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Gallery Images Section */}
+      {onUploadImage && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">
+              Product Gallery
+              <span className="text-gray-500 text-xs ml-2">(optional – extra images shown alongside the main image)</span>
+            </label>
+            <label className="inline-flex items-center px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
+              <input
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                ref={galleryInputRef}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) addGalleryImage(file);
+                  e.target.value = '';
+                }}
+              />
+              <Upload className="w-4 h-4 mr-1" />
+              Add Image
+            </label>
+          </div>
+          {galleryImages.length === 0 ? (
+            <div className="text-sm text-gray-500 italic p-3 border-2 border-dashed border-gray-200 rounded-lg text-center">
+              No gallery images yet. Upload images to show customers multiple views.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {galleryImages.map((imgUrl, imgIdx) => (
+                <div key={imgIdx} className="relative group">
+                  <img
+                    src={imgUrl}
+                    alt={`Gallery ${imgIdx + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryImage(imgIdx)}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove image"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-4">
       <div className="flex items-center justify-between">
         <label className="block text-sm font-medium text-gray-700">
           Custom Properties
@@ -245,41 +351,85 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
                     {(property as CustomPropertyDropdown).options.length === 0 ? (
                       <p className="text-xs text-gray-400 italic">No options yet. Click "Add Option" to add one.</p>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {(property as CustomPropertyDropdown).options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={option}
-                              onChange={(e) => updateDropdownOptionLabel(index, optIndex, e.target.value)}
-                              placeholder={`Option ${optIndex + 1} label`}
-                              className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
-                            />
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm text-gray-500">£</span>
+                          <div key={optIndex} className="space-y-1.5">
+                            <div className="flex items-center gap-2">
                               <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={(property as CustomPropertyDropdown).optionPrices?.[option] ?? ''}
-                                onChange={(e) => updateDropdownOptionPrice(index, option, e.target.value)}
-                                placeholder="Price"
-                                className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                                type="text"
+                                value={option}
+                                onChange={(e) => updateDropdownOptionLabel(index, optIndex, e.target.value)}
+                                placeholder={`Option ${optIndex + 1} label`}
+                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
                               />
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm text-gray-500">£</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={(property as CustomPropertyDropdown).optionPrices?.[option] ?? ''}
+                                  onChange={(e) => updateDropdownOptionPrice(index, option, e.target.value)}
+                                  placeholder="Price"
+                                  className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeDropdownOption(index, optIndex)}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                title="Remove option"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeDropdownOption(index, optIndex)}
-                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                              title="Remove option"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Option image */}
+                            {onUploadImage && option && (
+                              <div className="flex items-center gap-2 pl-1">
+                                {(property as CustomPropertyDropdown).optionImages?.[option] ? (
+                                  <div className="relative group flex items-center gap-2">
+                                    <img
+                                      src={(property as CustomPropertyDropdown).optionImages![option]}
+                                      alt={option}
+                                      className="w-10 h-10 object-cover rounded border border-gray-300"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDropdownOptionImage(index, option, '')}
+                                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                                      title="Remove image"
+                                    >
+                                      Remove image
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-dashed border-gray-300 rounded-md hover:bg-gray-100 cursor-pointer transition-colors text-gray-500">
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleOptionImageUpload(index, option, file);
+                                        e.target.value = '';
+                                      }}
+                                    />
+                                    <Image className="w-3 h-3" />
+                                    Add image for {option}
+                                  </label>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                         {Object.keys((property as CustomPropertyDropdown).optionPrices ?? {}).length > 0 && (
                           <p className="text-xs text-blue-600 mt-1">
                             Options with a price will override the product price when selected.
+                          </p>
+                        )}
+                        {Object.keys((property as CustomPropertyDropdown).optionImages ?? {}).length > 0 && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Options with an image will update the displayed product image when selected.
                           </p>
                         )}
                       </div>
@@ -341,6 +491,7 @@ export function CustomPropertiesEditor({ value, onChange }: CustomPropertiesEdit
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
