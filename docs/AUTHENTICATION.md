@@ -63,11 +63,18 @@ WHERE user_id = (
    - Go to Authentication → Providers
    - Enable Google provider
    - Add Google OAuth credentials
+   - Go to Authentication → URL Configuration and set:
+     - **Site URL**: `https://your-site.netlify.app` (your production URL)
+     - **Redirect URLs**: add `https://your-site.netlify.app`
+   > ⚠️ If the Site URL is left as `http://localhost:5173`, Google OAuth will redirect
+   > back to localhost after authentication instead of your production site.
 
-3. **Environment Variables**:
+3. **Environment Variables** (Netlify Dashboard → Site settings → Environment variables):
    ```bash
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key
+   # Must match the Redirect URL added to Supabase Dashboard above
+   VITE_SITE_URL=https://your-site.netlify.app
    ```
 
 ## Database Schema
@@ -121,4 +128,10 @@ WHERE user_id = (
 
 ### Google auth issues
 - **Local**: Mock auth should work automatically
-- **Production**: Verify Google OAuth credentials in Supabase dashboard
+- **Production — redirects to localhost**: The Supabase project's **Site URL** is still set to
+  `http://localhost:5173`. Fix:
+  1. In Supabase Dashboard → Authentication → URL Configuration, update **Site URL** to your
+     production URL (e.g. `https://your-site.netlify.app`) and add the same value to **Redirect URLs**.
+  2. Set `VITE_SITE_URL=https://your-site.netlify.app` in your deployment environment variables.
+  Both values must match exactly.
+- **Production — other errors**: Verify Google OAuth credentials in Supabase dashboard

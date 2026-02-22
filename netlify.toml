@@ -15,6 +15,7 @@
     "VITE_SUPABASE_URL",
     "VITE_SUPABASE_ANON_KEY",
     "VITE_PAYPAL_CLIENT_ID",
+    "VITE_SITE_URL",
   ]
 
 # Security Headers

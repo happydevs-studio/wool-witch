@@ -141,10 +141,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // Production Google OAuth
+      // Use VITE_SITE_URL if set (must match a URL whitelisted in Supabase Dashboard →
+      // Authentication → URL Configuration → Redirect URLs), otherwise fall back to the
+      // current page origin.
+      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`
+          redirectTo: siteUrl
         }
       });
       
