@@ -1,4 +1,4 @@
 User-agent: *
-Disallow: /
+Allow: /
 
-# Sitemap: https://woolwitch.github.io/woolwitch/sitemap.xml
+Sitemap: https://woolwitch.github.io/woolwitch/sitemap.xml
